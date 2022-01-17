@@ -1,0 +1,25 @@
+{
+    "UKF": {
+        "use_lidar": true,
+        "use_radar": true,
+        "use_camera": true,
+        "n_state": 5,
+        "n_state_aug": 7,
+        "n_lidar": 2,
+        "n_radar": 3,
+        "n_camera": 3,
+        "std_acceleration": 0.7,
+        "std_yaw_rate": 0.6,
+        "std_lidar_x": 0.15,
+        "std_lidar_y": 0.15,
+        "std_radar_x": 0.3,
+        "std_radar_y": 0.3,
+        "std_radar_v": 5
+    }, 
+    "JPDA": {
+        "p_d": 1.0,
+        "g_sigma": 15,
+        "distance_threshold": 1.5,
+        "iou_threshold": 0.1
+    }
+}
