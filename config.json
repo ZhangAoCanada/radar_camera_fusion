@@ -21,5 +21,9 @@
         "g_sigma": 15,
         "distance_threshold": 1.5,
         "iou_threshold": 0.1
+    },
+    "Tracker": {
+        "max_no_detections": 10,
+        "min_accept_detections": 10
     }
 }

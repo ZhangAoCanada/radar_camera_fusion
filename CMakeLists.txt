@@ -21,6 +21,10 @@ src/param.h
 src/param.cpp
 src/ukf.h
 src/ukf.cpp
+src/hungarianAlg.h
+src/hungarianAlg.cpp
+src/track.h
+src/track.cpp
 )
 
 target_link_libraries(ukf_test ${EIGEN3_LIBRARIES})

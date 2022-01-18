@@ -39,7 +39,9 @@ UKF::UKF(const Param& param) {
 
 }
 
+
 UKF::~UKF() = default;
+
 
 void UKF::process(Detection& detection) {
     // Initialization
@@ -73,7 +75,6 @@ void UKF::process(Detection& detection) {
         return;
     }
 
-
     const double dt = (detection.getTimestamp() - time_us_)/1000000.0;
 
     // Measurement update
@@ -87,6 +88,7 @@ void UKF::process(Detection& detection) {
     // be skipped, e.g. for the RADAR measurement.
     time_us_ = detection.getTimestamp();
 }
+
 
 void UKF::prediction(double delta_t) {
     //Augment the sigma points
@@ -170,6 +172,7 @@ void UKF::prediction(double delta_t) {
     }
 }
 
+
 void UKF::updateLidar(Detection& detection, double delta_t) {
 
     prediction(delta_t);
@@ -185,6 +188,7 @@ void UKF::updateLidar(Detection& detection, double delta_t) {
 
     measurementUpdate(detection, Zsig, n_z);
 }
+
 
 void UKF::updateRadar(Detection& detection, double delta_t) {
 
@@ -203,6 +207,24 @@ void UKF::updateRadar(Detection& detection, double delta_t) {
 
     measurementUpdate(detection, Zsig, n_z);
 }
+
+
+void UKF::updateCamera(Detection& detection, double delta_t) {
+
+    prediction(delta_t);
+
+    const int n_z = 3;
+    Eigen::MatrixXd Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
+
+    for (int i=0; i < 2 * n_aug_ + 1; ++i) {
+        Zsig(0, i) = Xsig_pred_(0, i);
+        Zsig(1, i) = Xsig_pred_(1, i);
+        Zsig(2, i) = Xsig_pred_(2, i);
+    }
+
+    measurementUpdate(detection, Zsig, n_z);
+}
+
 
 void UKF::measurementUpdate(Detection& detection,
                             const Eigen::MatrixXd &Zsig,
@@ -266,6 +288,7 @@ void UKF::measurementUpdate(Detection& detection,
 
 }
 
+
 Eigen::MatrixXd UKF::generateSigmaPoints(const Eigen::VectorXd &x,
                                          const Eigen::MatrixXd &P,
                                          int n_aug, double lambda) {
@@ -285,6 +308,7 @@ Eigen::MatrixXd UKF::generateSigmaPoints(const Eigen::VectorXd &x,
     return Xsig;
 }
 
+
 inline double UKF::normalizeAngle(double phi) {
     double phi_norm = std::fmod(phi, 2*kPI);
     if (phi_norm <= -kPI) phi_norm += 2*kPI;
@@ -293,13 +317,16 @@ inline double UKF::normalizeAngle(double phi) {
     return phi_norm;
 }
 
+
 const Eigen::VectorXd UKF::getState() const {
     return x_;
 }
 
+
 const double UKF::getNISRadar() const {
     return nis_radar_;
 }
+
 
 const double UKF::getNISLidar() const {
     return nis_lidar_;

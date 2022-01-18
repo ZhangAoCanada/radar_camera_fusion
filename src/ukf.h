@@ -31,6 +31,11 @@ public:
     // @param delta_t: Time step in second
     void updateRadar(Detection& detection, double delta_t);
 
+    // Updates the state and the state covariance matrix using a camera measurement.
+    // @param m_pkg: Measurement
+    // @param delta_t: Time step in second
+    void updateCamera(Detection& detection, double delta_t);
+
     const Eigen::VectorXd getState() const; 
     const double getNISRadar() const;
     const double getNISLidar() const;

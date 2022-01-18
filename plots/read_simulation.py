@@ -39,9 +39,11 @@ def rectanglePatch(data, color):
     w, h = CAR_BOX_SIZE[0], CAR_BOX_SIZE[1]
     top_left_x = -data.x - w / 2
     top_left_z = data.z
-    angle = np.arctan( data.vz / -data.vx)
-    angle = 90 - abs(angle / np.pi * 180)
-    angle = 0 if angle > 45 else angle
+    # angle = np.arctan( data.vz / -data.vx)
+    # angle = 90 - abs(angle / np.pi * 180)
+    # angle = 0 if angle > 45 else angle
+    angle = np.arctan( data.vx / data.vz)
+    angle = angle / np.pi * 180
     # angle = 0
     return patches.Rectangle((top_left_x, top_left_z), w, h, angle=angle , fill=False, edgecolor=color, linewidth=1)
 
@@ -49,7 +51,7 @@ def rectanglePatch(data, color):
 
 if __name__ == "__main__":
 
-    simulation_path = "./small_session_camcam_txt.txt"
+    simulation_path = "../data/small_session_camcam_txt.txt"
 
     metadata = dict(title='test', artist='Matplotlib',comment='Movie support!')
     writer = FFMpegWriter(fps=15, metadata=metadata)

@@ -45,11 +45,12 @@ void checkFiles(std::ifstream& in_file, std::string& in_name, std::ofstream& out
   }
 }
 
-
-double normalize(const double a){
-  return (fabs(a) > M_PI) ? remainder(a, 2. * M_PI) : a;
+void checkSingleFile(std::ifstream& in_stream, std::string& in_filename){
+  if(!in_stream.is_open()){
+    std::cerr << "Cannot open input file: " << in_filename << std::endl;
+    exit(EXIT_FAILURE);
+  }
 }
-
 
 Eigen::VectorXd calculate_RMSE(const std::vector<Eigen::VectorXd> &estimations, const std::vector<Eigen::VectorXd> &ground_truths){
   Eigen::VectorXd rmse(4);

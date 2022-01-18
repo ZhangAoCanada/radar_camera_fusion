@@ -36,6 +36,10 @@ public:
     float g_sigma;
     float dist_threshold;
     float iou_threshold;
+
+    // for Tracker Management
+    int min_accept_detections;
+    int max_no_detections;
 };
 
 #endif /* PARAM_H */

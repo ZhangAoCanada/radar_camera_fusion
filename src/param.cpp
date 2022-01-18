@@ -8,11 +8,11 @@ Param::Param(const std::string& json_file) {
     std::ifstream fin(json_file.c_str());
 
     if (!fin.is_open())
-        std::cerr << "Json file not found: " << json_file << std::endl;
+        std::cerr << "[ERR] Json file not found: " << json_file << std::endl;
 
     reader.parse(fin, root);
 
-    // load configuration for UKF
+    /***************** load configuration for UKF ********************/
     Json::Value config_ukf = root["UKF"];
 
     use_lidar = config_ukf["use_lidar"].asBool();
@@ -31,14 +31,16 @@ Param::Param(const std::string& json_file) {
     std_radar_y = config_ukf["std_radar_y"].asDouble();
     std_radar_v = config_ukf["std_radar_v"].asDouble();
 
+    // The dimension of R_lidar is n_lidar x n_lidar
     R_lidar = Eigen::MatrixXd(n_lidar, n_lidar);
-    R_lidar <<   std_lidar_x * std_lidar_x,                         0,
-                                         0, std_lidar_y * std_lidar_y;
+    R_lidar <<  std_lidar_x * std_lidar_x, 0,
+                0, std_lidar_y * std_lidar_y;
 
+    // The dimension of R_radar is n_radar x n_radar
     R_radar = Eigen::MatrixXd(n_radar, n_radar);
-    R_radar <<   std_radar_x * std_radar_x,                             0,                              0,
-                                         0,     std_radar_y * std_radar_y,                              0,
-                                         0,                             0,      std_radar_v * std_radar_v;
+    R_radar <<  std_radar_x * std_radar_x,   0,    0,
+                0, std_radar_y * std_radar_y,      0,
+                0,      0, std_radar_v * std_radar_v;
 
 
 
@@ -59,7 +61,7 @@ Param::Param(const std::string& json_file) {
     std::cout << "\t std_radar_y: " << std_radar_y << std::endl;
     std::cout << "\t std_radar_v: " << std_radar_v << std::endl;
 
-    // load configuration for JPDA
+    /***************** load configuration for JPDA ********************/
     Json::Value config_jpda = root["JPDA"];
 
     p_d = config_jpda["p_d"].asDouble();
@@ -72,6 +74,16 @@ Param::Param(const std::string& json_file) {
     std::cout << "\t g_sigma: " << g_sigma << std::endl;
     std::cout << "\t dist_threshold: " << dist_threshold << std::endl;
     std::cout  << "\t iou_threshold: " << iou_threshold << std::endl;
+
+    /***************** load configuration for JPDA ********************/
+    Json::Value config_tacker = root["Tracker"];
+
+    min_accept_detections = config_tacker["min_accept_detections"].asInt();
+    max_no_detections = config_tacker["max_no_detections"].asInt();
+
+    std::cout << "[Tracker parameters loaded: ]" << std::endl;
+    std::cout << "\t min_accept_detections: " << min_accept_detections << std::endl;
+    std::cout << "\t max_no_detections: " << max_no_detections << std::endl;
 
     fin.close();
 }
