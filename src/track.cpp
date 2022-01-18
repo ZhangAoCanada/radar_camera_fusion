@@ -52,6 +52,9 @@ void Track::predict(double delta_t) {
         track_state_ = TrackState::ACCEPT;
     else
         track_state_ = TrackState::NONE;
+
+    Eigen::MatrixXd S = ukf_->getS();
+    ellipse_volume_ = M_PI * g_sigma_ * sqrt(S.determinant());
 }
 
 void Track::update(Detection& detection, double delta_t) {

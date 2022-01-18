@@ -229,28 +229,30 @@ void UKF::updateCamera(Detection& detection, double delta_t) {
 void UKF::measurementUpdate(Detection& detection,
                             const Eigen::MatrixXd &Zsig,
                             int n_z) {
-    Eigen::VectorXd z_pred = Eigen::VectorXd(n_z);
+    // Eigen::VectorXd z_pred = Eigen::VectorXd(n_z);
+    z_pred_ = Eigen::VectorXd(n_z);
 
     //calculate mean predicted measurement
-    z_pred.fill(0.0);
+    z_pred_.fill(0.0);
     for (int i=0; i< 2 * n_aug_ + 1; ++i) {
-        z_pred += weights_(i) * Zsig.col(i);
+        z_pred_ += weights_(i) * Zsig.col(i);
     }
 
     //calculate measurement covariance matrix S
-    Eigen::MatrixXd S = Eigen::MatrixXd(n_z, n_z);
+    // Eigen::MatrixXd S = Eigen::MatrixXd(n_z, n_z);
+    S_ = Eigen::MatrixXd(n_z, n_z);
 
-    S.fill(0.0);
+    S_.fill(0.0);
     for (int i=0; i< 2 * n_aug_ + 1; ++i) {
-        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred;
+        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred_;
 
-        S += weights_(i) * z_diff * z_diff.transpose();
+        S_ += weights_(i) * z_diff * z_diff.transpose();
     }
 
     if (detection.getSensorType() == SensorType::RADAR) {
-        S += r_radar_;
+        S_ += r_radar_;
     } else if (detection.getSensorType() == SensorType::LIDAR){
-        S += r_lidar_;
+        S_ += r_lidar_;
     }
 
     //calculate cross correlation matrix
@@ -259,7 +261,7 @@ void UKF::measurementUpdate(Detection& detection,
     Tc.fill(0.0);
     for (int i=0; i < 2 * n_aug_ + 1; i++) {
         //residual
-        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred;
+        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred_;
 
         // state difference
         Eigen::VectorXd x_diff = Xsig_pred_.col(i) - x_;
@@ -269,15 +271,15 @@ void UKF::measurementUpdate(Detection& detection,
     }
 
     //Kalman gain K;
-    Eigen::MatrixXd Si = S.inverse();
+    Eigen::MatrixXd Si = S_.inverse();
     Eigen::MatrixXd K = Tc * Si;
 
     //residual
-    Eigen::VectorXd z_diff = detection.getVector() - z_pred;
+    Eigen::VectorXd z_diff = detection.getVector() - z_pred_;
 
     //update state mean and covariance matrix
     x_ += K * z_diff;
-    P_ -= K * S * K.transpose();
+    P_ -= K * S_ * K.transpose();
 
     // Calculate the normalized innovation squared()
     if (detection.getSensorType() == SensorType::RADAR) {
@@ -317,17 +319,3 @@ inline double UKF::normalizeAngle(double phi) {
     return phi_norm;
 }
 
-
-const Eigen::VectorXd UKF::getState() const {
-    return x_;
-}
-
-
-const double UKF::getNISRadar() const {
-    return nis_radar_;
-}
-
-
-const double UKF::getNISLidar() const {
-    return nis_lidar_;
-}

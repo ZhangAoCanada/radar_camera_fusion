@@ -36,9 +36,11 @@ public:
     // @param delta_t: Time step in second
     void updateCamera(Detection& detection, double delta_t);
 
-    const Eigen::VectorXd getState() const; 
-    const double getNISRadar() const;
-    const double getNISLidar() const;
+    const Eigen::VectorXd getState() const { return x_; }
+    const Eigen::VectorXd getMeasurementPred() const { return z_pred_; }
+    const double getNISRadar() const { return nis_radar_; }
+    const double getNISLidar() const { return nis_lidar_; }
+    const Eigen::MatrixXd getS() const { return S_; }
 
 private:
 
@@ -48,6 +50,7 @@ private:
     bool use_radar_; // if this is false, radar measurements will be ignored (except for init)
     bool use_cam_; // if this is false, camera measurements will be ignored (except for init)
     Eigen::MatrixXd P_; // state covariance matrix
+    Eigen::MatrixXd S_; // measurement covariance matrix
     Eigen::MatrixXd Xsig_pred_; // predicted sigma points matrix
     double std_a_; // Process noise standard deviation longitudinal acceleration in m/s^2
     double std_yawdd_; // Process noise standard deviation yaw acceleration in rad/s^2
@@ -65,6 +68,7 @@ private:
 
     // parameters that can be accessed
     Eigen::VectorXd x_;// state vector: [pos1 pos2 vel_abs yaw_angle yaw_rate] in SI units and rad
+    Eigen::VectorXd z_pred_; // predicted measurement with size n_z
     double nis_radar_; // the current NIS (normalized innovation squared) for radar
     double nis_lidar_; // the current NIS for lidar
 

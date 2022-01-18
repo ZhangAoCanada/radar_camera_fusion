@@ -14,6 +14,8 @@ link_libraries(${JSONCPP_LIBRARIES})
 include_directories(${Eigen3_INCLUDE_DIRS})
 include_directories(${OpenCV_INCLUDE_DIRS})
 
+add_definitions(-DOPENCV_DISABLE_EIGEN_TENSOR_SUPPORT)
+
 add_executable(ukf_test 
 src/main.cpp
 src/tools.h
@@ -25,6 +27,8 @@ src/hungarianAlg.h
 src/hungarianAlg.cpp
 src/track.h
 src/track.cpp
+src/tracker.h
+src/tracker.cpp
 )
 
 target_link_libraries(ukf_test ${EIGEN3_LIBRARIES})
