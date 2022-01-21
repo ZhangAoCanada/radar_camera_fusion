@@ -18,6 +18,8 @@
     }, 
     "JPDA": {
         "p_d": 1.0,
+        "p_g": 0.4,
+        "association_cost": 40,
         "g_sigma": 15,
         "distance_threshold": 1.5,
         "iou_threshold": 0.1

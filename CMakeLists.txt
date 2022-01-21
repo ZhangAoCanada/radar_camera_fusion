@@ -29,6 +29,8 @@ src/track.h
 src/track.cpp
 src/tracker.h
 src/tracker.cpp
+src/jpda_tracker.h
+src/jpda_tracker.cpp
 )
 
 target_link_libraries(ukf_test ${EIGEN3_LIBRARIES})

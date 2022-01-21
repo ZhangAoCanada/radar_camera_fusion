@@ -2,7 +2,7 @@
 
 
 Track::Track(const Param& param) {
-    initialized_ = false;
+    initialized_ = true;
 
     ukf_ = std::make_shared<UKF>(param);
     id_ = -1;
@@ -29,7 +29,7 @@ Track::Track(const Param& param, Detection& detection) {
     // g_sigma_ = param.g_sigma_;
     // gamma_ = param.gamma_;
 
-    ukf_->process(detection);
+    process(detection);
 }
 
 

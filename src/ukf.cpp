@@ -60,6 +60,13 @@ void UKF::process(Detection& detection) {
         const double p_y = values[1];
         x_ << p_x, p_y, 0.0, 0.0, 0.0;
 
+        } else if (detection.getSensorType() == SensorType::CAMERA) {
+        Eigen::VectorXd values = detection.getVector(); 
+        const double p_x = values[0];
+        const double p_y = values[1];
+        const double p_v = values[2];
+        x_ << p_x, p_y, p_v, 0.0, 0.0;
+
         } else {
         std::cerr << "Unknown sensor_type: " << detection.getSensorType()
                     << std::endl;
@@ -72,7 +79,8 @@ void UKF::process(Detection& detection) {
 
         is_initialized_ = true;
 
-        return;
+        // TODO: to dicuss whether we can use the initialization detection for udpate.
+		return;
     }
 
     const double dt = (detection.getTimestamp() - time_us_)/1000000.0;
@@ -82,6 +90,8 @@ void UKF::process(Detection& detection) {
         updateRadar(detection, dt);
     } else if (detection.getSensorType() == SensorType::LIDAR && use_lidar_) {
         updateLidar(detection, dt);
+    } else if (detection.getSensorType() == SensorType::CAMERA && use_cam_) {
+        updateCamera(detection, dt);
     } else return;
 
     // The latest time update should be put here since the update may

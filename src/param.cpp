@@ -65,6 +65,8 @@ Param::Param(const std::string& json_file) {
     Json::Value config_jpda = root["JPDA"];
 
     p_d = config_jpda["p_d"].asDouble();
+    p_g = config_jpda["p_g"].asDouble();
+    association_cost = config_jpda["association_cost"].asDouble();
     g_sigma = config_jpda["g_sigma"].asDouble();
     dist_threshold = config_jpda["distance_threshold"].asDouble();
     iou_threshold = config_jpda["iou_threshold"].asDouble();

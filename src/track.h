@@ -5,6 +5,7 @@
 #include <vector>
 #include <memory>
 #include <eigen3/Eigen/Dense>
+#include <opencv2/opencv.hpp>
 
 #include "param.h"
 #include "ukf.h"
@@ -40,6 +41,9 @@ public:
     }
     const TrackState getTrackState() const { return track_state_; }
     const double getEllipseVolume() const { return ellipse_volume_; }
+    const double getDeltaT(Detection& detection) const { 
+        return ukf_->getDeltaT(detection); 
+        }
 
 private:
     std::shared_ptr<UKF> ukf_;

@@ -18,19 +18,20 @@ enum SensorType {
  * @param vector_: the vector used in KF for fusion. */
 class Detection {
 public:
-    Detection(const Param& param, const long long& timestamp, const float& x, const float& y, const float& v, const float& yaw, const float& yaw_rate, const SensorType& sensor_type)
+    Detection(const Param& param, const long long& timestamp, const double& x, const double& y, const double& v, const double& yaw, const double& yaw_rate, const SensorType& sensor_type)
         : timestamp_(timestamp), x_(x), y_(y), v_(v), yaw_(yaw), yaw_rate_(yaw_rate), sensor_type_(sensor_type) {
         // define sensor vector length
         // TODO: put these param in the param.h
         if (sensor_type_ == SensorType::LIDAR) {
             vector_ = Eigen::VectorXd(param.n_lidar);
             vector_ << x_, y_;
-        }
-        else if (sensor_type_ == SensorType::RADAR) {
+        } else if (sensor_type_ == SensorType::CAMERA) {
             vector_ = Eigen::VectorXd(param.n_radar);
             vector_ << x_, y_, v_;
-        }
-        else {
+        } else if (sensor_type_ == SensorType::RADAR) {
+            vector_ = Eigen::VectorXd(param.n_radar);
+            vector_ << x_, y_, v_;
+        } else {
             vector_ = Eigen::VectorXd(param.n_state);
             vector_ << x_, y_, v_, yaw_, yaw_rate_;
         }
@@ -51,17 +52,17 @@ public:
 
     const SensorType& getSensorType() const { return sensor_type_; }
     const long long getTimestamp() const { return timestamp_; }
-    const float getX() const { return x_; }
-    const float getY() const { return y_; }
-    const float getV() const { return v_; }
-    const float getYaw() const { return yaw_; }
-    const float getYawRate() const { return yaw_rate_; }
+    const double getX() const { return x_; }
+    const double getY() const { return y_; }
+    const double getV() const { return v_; }
+    const double getYaw() const { return yaw_; }
+    const double getYawRate() const { return yaw_rate_; }
     const Eigen::VectorXd getVector() const { return vector_; }
 
 private:
     SensorType sensor_type_;
     long long timestamp_;
-    float x_, y_, v_, yaw_, yaw_rate_; 
+    double x_, y_, v_, yaw_, yaw_rate_; 
     Eigen::VectorXd vector_;
 };
 

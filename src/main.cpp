@@ -4,7 +4,8 @@
 #include "tools.h"
 #include "param.h"
 #include "detection.h"
-#include "track.h"
+// #include "track.h"
+#include "jpda_tracker.h"
 
 
 int main(int argc, char* argv[]) {
@@ -27,7 +28,9 @@ int main(int argc, char* argv[]) {
     double v, yaw;
     SensorType sensor_type;
     
-    std::vector<Detection> all_sensor_data;
+    std::vector<std::vector<Detection>> all_sensor_data;
+    std::vector<Detection> frame_sensor_data;
+    int frame_id_count = 1;
 
     while (getline(in_stream, line)) {
         std::istringstream iss(line);
@@ -48,7 +51,14 @@ int main(int argc, char* argv[]) {
 
         Detection sensor_data(param, timestamp, x, z, v, yaw, 0, sensor_type);
 
-        all_sensor_data.push_back(sensor_data);
+        if (frame_id_count == frame_id) {
+            frame_sensor_data.push_back(sensor_data);
+        } else {
+            all_sensor_data.push_back(frame_sensor_data);
+            frame_sensor_data.clear();
+            frame_id_count = frame_id;
+            frame_sensor_data.push_back(sensor_data);
+        }
     }
 
     out_stream << "time_stamp" << "\t";
@@ -65,7 +75,7 @@ int main(int argc, char* argv[]) {
     out_stream << "yaw_measured" << "\n";
 
     /************ NOTE: Start tracking system from here. *************/
-    Track track(param);
+    JPDATracker tracker(param);
 
     for(int k = 0; k < all_sensor_data.size(); k++){
         int sensor_type;
@@ -74,14 +84,20 @@ int main(int argc, char* argv[]) {
 
         auto sensor_data = all_sensor_data[k];
 
-        std::cout << "[SENSOR INFO] " << sensor_data.getTimestamp() << " " << \
-                                        sensor_data.getX() << " " << \
-                                        sensor_data.getY() << " " << \
-                                        sensor_data.getV() << " " << \
-                                        sensor_data.getYaw() << " " << \
-                                        sensor_data.getYawRate() << std::endl;
+        if (sensor_data.size() == 0) 
+            continue;
 
-        track.process(sensor_data);
+        std::cout << "[SENSOR INFO] \n";
+        for (auto& data: sensor_data) {
+            std::cout << "\t" << data.getTimestamp() << " " << \
+                                data.getX() << " " << \
+                                data.getY() << " " << \
+                                data.getV() << " " << \
+                                data.getYaw() << " " << \
+                                data.getYawRate() << std::endl;
+        }
+
+        tracker.track(sensor_data);
     }
 
     return 0;

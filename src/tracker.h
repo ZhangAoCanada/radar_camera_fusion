@@ -17,8 +17,8 @@ public:
     Tracker(const Param& param);
     ~Tracker() = default;
 
-    virtual void track(Detection& detection) = 0;
-    virtual void track(Detection& detection, std::vector<bool> is_associated, int& track_id) = 0;
+    virtual void track(std::vector<Detection>& detections) = 0;
+    // virtual void track(Detection& detection, std::vector<bool> is_associated, int& track_id) = 0;
     void addTrack(std::shared_ptr<Track> track) { tracks_.push_back(track); }
     const int size() const { return tracks_.size(); }
     const std::vector<std::shared_ptr<Track>>& getTracks() const { return tracks_; }
@@ -27,21 +27,25 @@ protected:
     const static int MAX_ASSOCIATIONS = 10000;
     bool initialized_;
     bool start_tracking_;
+    int track_id_;
     Param param_;
     std::vector<std::shared_ptr<Track>> tracks_;
-    std::vector<Eigen::VectorXd> prev_detections_;
-    std::vector<Eigen::VectorXd> not_associated_;
+    std::vector<std::shared_ptr<Track>> tracks_tmp_;
+    // std::vector<Eigen::VectorXd> prev_detections_;
+    // std::vector<Eigen::VectorXd> not_associated_;
+    std::vector<Detection> prev_detections_;
+    std::vector<Detection> not_associated_;
     Eigen::MatrixXd beta_;
-    Eigen::VectorXd last_beta;
+    Eigen::VectorXd last_beta_;
 
-    std::vector<bool> analyzeTracks(const Eigen::MatrixXd& q, std::vector<Detection> detections);
-    std::vector<Eigen::MatrixXd> generateHypothesis(const std::vector<Eigen::VectorXd>& selected_detections, const Eigen::MatrixXd& q);
-    Eigen::MatrixXd jointProbability(const std::vector<Eigen::MatrixXd>& association_matrices, const std::vector<Eigen::VectorXd>& selected_detections);
+    Eigen::MatrixXd jointProbability(const std::vector<Eigen::MatrixXd>& association_matrices, const std::vector<Detection>& selected_detections);
+    std::vector<Eigen::MatrixXd> generateHypothesis(const std::vector<Detection>& selected_detections, const cv::Mat& q);
+    std::vector<bool> analyzeTracks(const cv::Mat& q, std::vector<Detection>& detections);
 
-// private:
-//     virtual void delete_tracks() = 0;
-//     virtual void manage_new_tracks() = 0;
-//     virtual void associate(std::vector<Eigen::VectorXd>& seleted_detections, Eigen::MatrixXd& q, std::vector<Detection>& detections, std::vector<bool> is_associated);
+private:
+    virtual void deleteTracks() = 0;
+    virtual void manageNewTracks() = 0;
+    virtual void associate(std::vector<Detection>& selected_detections, cv::Mat& q, std::vector<Detection>& detections, std::vector<bool>& is_associated) = 0;
 
 }; // class Tracker
 
