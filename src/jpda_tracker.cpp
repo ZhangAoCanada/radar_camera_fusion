@@ -63,7 +63,7 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 
 		const std::vector<Eigen::MatrixXd>& association_matrices = generateHypothesis(selected_detections, q);
 		// TODO: association gate EllipseVolume tooooo small
-		//beta_ = jointProbability(association_matrices, selected_detections);
+		beta_ = jointProbability(association_matrices, selected_detections);
     }
 }
 
@@ -217,6 +217,7 @@ void JPDATracker::associate(std::vector<Detection>& selected_detections, cv::Mat
 		}
 		++j;
 	}
+	q = q(cv::Rect(0, 0, tracks_.size() + 1, validationIdx));
 }
 
 		// NOTE: original implementation
