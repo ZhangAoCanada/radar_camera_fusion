@@ -11,7 +11,7 @@ Track::Track(const Param& param) {
     min_accept_detections_ = param.min_accept_detections;
     max_no_detections_ = param.max_no_detections;
     track_state_ = TrackState::NONE;
-    // g_sigma_ = param.g_sigma_;
+    g_sigma_ = param.g_sigma;
     // gamma_ = param.gamma_;
 }
 
@@ -26,7 +26,7 @@ Track::Track(const Param& param, Detection& detection) {
     min_accept_detections_ = param.min_accept_detections;
     max_no_detections_ = param.max_no_detections;
     track_state_ = TrackState::NONE;
-    // g_sigma_ = param.g_sigma_;
+    g_sigma_ = param.g_sigma;
     // gamma_ = param.gamma_;
 
     process(detection);

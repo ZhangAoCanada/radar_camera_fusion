@@ -20,7 +20,6 @@ Eigen::MatrixXd Tracker::jointProbability(const std::vector<Eigen::MatrixXd>& as
     double V = 0.;
     for(const auto& track : tracks_) {
         V += track->getEllipseVolume();
-
 	}
 
     for(uint i = 0; i < hyp_num; ++i) {
@@ -70,10 +69,8 @@ Eigen::MatrixXd Tracker::jointProbability(const std::vector<Eigen::MatrixXd>& as
         }
         
 		/* TODO: discuss whether it is necessary to add a 1e-5 */
-        const double& likelyhood = N / (double(std::pow(V, false_alarms)) + 1e-5);
+        const double& likelyhood = N / (double(std::pow(V, false_alarms)));
 
-        std::cout << "[DEBUG INFO] Likelyhood: " << likelyhood << std::endl;
-        
         if(param_.p_d == 1) {
             prior = 1.;
         }

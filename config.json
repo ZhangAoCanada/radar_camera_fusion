@@ -19,13 +19,13 @@
     "JPDA": {
         "p_d": 1.0,
         "p_g": 0.4,
-        "association_cost": 40,
-        "g_sigma": 15,
+        "association_cost": 5,
+        "g_sigma": 5,
         "distance_threshold": 1.5,
         "iou_threshold": 0.1
     },
     "Tracker": {
-        "max_no_detections": 10,
-        "min_accept_detections": 10
+        "max_no_detections": 5,
+        "min_accept_detections": 5
     }
 }

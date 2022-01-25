@@ -34,9 +34,6 @@ void JPDATracker::track(std::vector<Detection>& detections) {
         int i;
         int j = 0;
         for (auto& track: tracks_) {
-            // if (track->getS().size() == 0) {
-            //     std::cout << "[TRACK INFO] S is empty...\n";
-            // }
             // NOTE: start tracking
             const double dt = track->getDeltaT(detections.at(0));
             track->predict(dt);
@@ -59,11 +56,9 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 			}
 		} else {
 			not_associated = analyzeTracks(q, detections);
+            const std::vector<Eigen::MatrixXd>& association_matrices = generateHypothesis(selected_detections, q);
+            beta_ = jointProbability(association_matrices, selected_detections);
 		}
-
-		const std::vector<Eigen::MatrixXd>& association_matrices = generateHypothesis(selected_detections, q);
-		// TODO: association gate EllipseVolume tooooo small
-		beta_ = jointProbability(association_matrices, selected_detections);
     }
 }
 
@@ -87,7 +82,7 @@ void JPDATracker::manageNewTracks()
     } else if (deteSize == 0) {
         prev_detections_.clear();
     } else {
-        cv::Mat assigmentsBin = cv::Mat::zeros(cv::Size(deteSize, prevDetSize), CV_32SC1);
+        cv::Mat assignmentsBin = cv::Mat::zeros(cv::Size(deteSize, prevDetSize), CV_32SC1);
         cv::Mat costMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);
         
         auto euclideanDist = [](const Eigen::Vector2f& p1, const Eigen::Vector2f& p2)
@@ -118,21 +113,20 @@ void JPDATracker::manageNewTracks()
         const uint& assSize = assignments.size();
         
         for(uint i = 0; i < assSize; ++i) {
-            if( assignments[i] != -1 && costMat.at<double>(i, assignments[i]) < param_.association_cost) {
-                assigmentsBin.at<int>(i, assignments[i]) = 1;
+            if( assignments[i] != -1 && costMat.at<float>(i, assignments[i]) < param_.association_cost) {
+                assignmentsBin.at<int>(i, assignments[i]) = 1;
             }
         }
         
-        const uint& rows = assigmentsBin.rows;
-        const uint& cols = assigmentsBin.cols;
+        const uint& rows = assignmentsBin.rows;
+        const uint& cols = assignmentsBin.cols;
         
         // NOTE: as I observed, this tracker is to store all the tracks tmperorily
         // std::shared_ptr<JPDATracker> tracker = std::make_shared<JPDATracker>(param_);
-            
         
         for(uint i = 0; i < rows; ++i) {
             for(uint j = 0; j < cols; ++j) {
-                if(assigmentsBin.at<int>(i, j)) {
+                if(assignmentsBin.at<int>(i, j)) {
                     std::shared_ptr<Track> tr = std::make_shared<Track>(param_, prev_detections_.at(i));
 					tr->process(not_associated_.at(j));
                     tracks_tmp_.push_back(tr);
@@ -144,9 +138,9 @@ void JPDATracker::manageNewTracks()
         //     trackers_.push_back(tracker);
         // }
         
-        cv::Mat notAssignedDet(cv::Size(assigmentsBin.cols, 1), CV_32SC1, cv::Scalar(0));
-        for(uint i = 0; i < assigmentsBin.rows; ++i) {
-            notAssignedDet += assigmentsBin.row(i);
+        cv::Mat notAssignedDet(cv::Size(assignmentsBin.cols, 1), CV_32SC1, cv::Scalar(0));
+        for(uint i = 0; i < assignmentsBin.rows; ++i) {
+            notAssignedDet += assignmentsBin.row(i);
         }
         
         notAssignedDet.convertTo(notAssignedDet, CV_8UC1);

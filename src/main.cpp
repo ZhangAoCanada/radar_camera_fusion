@@ -81,24 +81,41 @@ int main(int argc, char* argv[]) {
         int sensor_type;
         long long timestamp;
         std::string sensor_name;
+        std::vector<Detection> cam_data;
+        std::vector<Detection> radar_data;
 
         auto sensor_data = all_sensor_data[k];
 
-        if (sensor_data.size() == 0) 
+        if (sensor_data.size() == 0 || k <= 1)
             continue;
 
-        std::cout << "[SENSOR INFO] \n";
-        for (auto& data: sensor_data) {
-            std::cout << "\t" << data.getTimestamp() << " " << \
-                                data.getX() << " " << \
-                                data.getY() << " " << \
-                                data.getV() << " " << \
-                                data.getYaw() << " " << \
-                                data.getYawRate() << std::endl;
+        // std::cout << "[SENSOR INFO] \n";
+        // for (auto& data: sensor_data) {
+        //     std::cout << "\t" << data.getTimestamp() << " " << \
+        //                         data.getX() << " " << \
+        //                         data.getY() << " " << \
+        //                         data.getV() << " " << \
+        //                         data.getYaw() << " " << \
+        //                         data.getYawRate() << std::endl;
+        // }
+        
+        for (const auto& data: sensor_data) {
+            if (data.getSensorType() == SensorType::CAMERA) {
+                cam_data.push_back(data);
+            } else if (data.getSensorType() == SensorType::RADAR) {
+                radar_data.push_back(data);
+            }
         }
 
-        tracker.track(sensor_data);
+        if (cam_data.size() > 0) {
+            tracker.track(cam_data);
+        }
+        if (radar_data.size() > 0) {
+            tracker.track(radar_data);
+        }
     }
+
+    std::cout << "Done.\n";
 
     return 0;
 }

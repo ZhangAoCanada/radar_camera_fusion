@@ -34,8 +34,8 @@ public:
     // configuration for JPDA
     double p_d;
     double p_g; 
-    double association_cost;
-    double g_sigma;
+    double association_cost; // Euclidean distance threshold
+    double g_sigma; // ellipse gate threshold
     double dist_threshold;
     double iou_threshold;
 

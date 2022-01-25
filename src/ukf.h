@@ -42,7 +42,7 @@ public:
     const double getNISLidar() const { return nis_lidar_; }
     const Eigen::MatrixXd getS() const { return S_; }
     const double getDeltaT(Detection& detection) const { 
-        return detection.getTimestamp() - time_us_; 
+        return (detection.getTimestamp() - time_us_) / 1000000.0; 
         }
 
 private:
