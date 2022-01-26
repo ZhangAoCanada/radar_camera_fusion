@@ -58,11 +58,5 @@ void Track::predict(double delta_t) {
 }
 
 void Track::update(Detection& detection, double delta_t) {
-    if (detection.getSensorType() == SensorType::CAMERA) {
-        ukf_->updateCamera(detection, delta_t);
-    } else if (detection.getSensorType() == SensorType::LIDAR) {
-        ukf_->updateLidar(detection, delta_t);
-    } else {
-        ukf_->updateRadar(detection, delta_t);
-    }
+    ukf_->update(detection, delta_t);
 }

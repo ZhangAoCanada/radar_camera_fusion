@@ -177,7 +177,7 @@ std::vector<bool> Tracker::analyzeTracks(const cv::Mat& q, std::vector<Detection
     const cv::Mat& m_q = q(cv::Rect(1, 0, q.cols - 1, q.rows));
     cv::Mat col_sum(cv::Size(m_q.cols, 1), q.type(), cv::Scalar(0));
 
-    std::vector<bool> not_associate(m_q.cols, true); //ALL TRACKS ARE ASSOCIATED
+    std::vector<bool> association(m_q.cols, true); //ALL TRACKS ARE ASSOCIATED
     for(uint i = 0; i < m_q.rows; ++i)
     {
         col_sum += m_q.row(i);
@@ -193,7 +193,7 @@ std::vector<bool> Tracker::analyzeTracks(const cv::Mat& q, std::vector<Detection
     
     for(uint i = 0; i < zeroValues.total(); ++i)
     {
-        not_associate.at(zeroValues.at<cv::Point>(i).x) = false;
+        association.at(zeroValues.at<cv::Point>(i).x) = false;
     }   
-    return not_associate;
+    return association;
 }

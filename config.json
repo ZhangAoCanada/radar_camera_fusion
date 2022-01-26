@@ -14,7 +14,10 @@
         "std_lidar_y": 0.15,
         "std_radar_x": 0.3,
         "std_radar_y": 0.3,
-        "std_radar_v": 5
+        "std_radar_v": 5,
+        "std_camera_x": 0.3,
+        "std_camera_y": 0.3,
+        "std_camera_v": 5
     }, 
     "JPDA": {
         "p_d": 1.0,

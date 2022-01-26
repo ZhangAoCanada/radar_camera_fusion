@@ -45,7 +45,7 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 
         cv::Mat_<int> q(cv::Size(tracks_.size(), detections.size()), int(0));
         std::vector<Detection> selected_detections;
-        std::vector<bool> not_associated;
+        std::vector<bool> curr_association;
 
         associate(selected_detections, q, detections, is_associated);
 
@@ -55,9 +55,18 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 				track->notDetected();
 			}
 		} else {
-			not_associated = analyzeTracks(q, detections);
+			curr_association = analyzeTracks(q, detections);
             const std::vector<Eigen::MatrixXd>& association_matrices = generateHypothesis(selected_detections, q);
             beta_ = jointProbability(association_matrices, selected_detections);
+            last_beta_ = beta_.row(beta_.rows() - 1);
+            for (int k = 0; k < tracks_.size(); k++) {
+                if (curr_association.at(k)) {
+                    // TODO: update KF
+                    // tracks_.at(k)->update(selected_detections.at(k), dt);
+                } else {
+                    tracks_.at(k)->notDetected();
+                }
+            }
 		}
     }
 }

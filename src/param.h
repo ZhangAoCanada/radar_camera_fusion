@@ -29,7 +29,10 @@ public:
     double std_radar_x;
     double std_radar_y;
     double std_radar_v;
-    Eigen::MatrixXd R_lidar, R_radar;
+    double std_camera_x;
+    double std_camera_y;
+    double std_camera_v;
+    Eigen::MatrixXd R_lidar, R_radar, R_camera;
 
     // configuration for JPDA
     double p_d;

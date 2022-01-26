@@ -30,6 +30,9 @@ Param::Param(const std::string& json_file) {
     std_radar_x = config_ukf["std_radar_x"].asDouble();
     std_radar_y = config_ukf["std_radar_y"].asDouble();
     std_radar_v = config_ukf["std_radar_v"].asDouble();
+    std_camera_x = config_ukf["std_camera_x"].asDouble();
+    std_camera_y = config_ukf["std_camera_y"].asDouble();
+    std_camera_v = config_ukf["std_camera_v"].asDouble();
 
     // The dimension of R_lidar is n_lidar x n_lidar
     R_lidar = Eigen::MatrixXd(n_lidar, n_lidar);
@@ -41,6 +44,12 @@ Param::Param(const std::string& json_file) {
     R_radar <<  std_radar_x * std_radar_x,   0,    0,
                 0, std_radar_y * std_radar_y,      0,
                 0,      0, std_radar_v * std_radar_v;
+
+    // The dimension of R_camera is n_camera x n_camera
+    R_camera = Eigen::MatrixXd(n_camera, n_camera);
+    R_camera << std_camera_x * std_camera_x, 0, 0,
+                0, std_camera_y * std_camera_y, 0,
+                0, 0, std_camera_v * std_camera_v;
 
 
 
@@ -60,6 +69,9 @@ Param::Param(const std::string& json_file) {
     std::cout << "\t std_radar_x: " << std_radar_x << std::endl;
     std::cout << "\t std_radar_y: " << std_radar_y << std::endl;
     std::cout << "\t std_radar_v: " << std_radar_v << std::endl;
+    std::cout << "\t std_camera_x: " << std_camera_x << std::endl;
+    std::cout << "\t std_camera_y: " << std_camera_y << std::endl;
+    std::cout << "\t std_camera_v: " << std_camera_v << std::endl;
 
     /***************** load configuration for JPDA ********************/
     Json::Value config_jpda = root["JPDA"];

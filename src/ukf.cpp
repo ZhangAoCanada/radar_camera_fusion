@@ -8,6 +8,9 @@ UKF::UKF(const Param& param) {
     use_lidar_ = param.use_lidar;
     use_radar_ = param.use_radar;
     use_cam_ = param.use_camera;
+    n_lidar_ = param.n_lidar;
+    n_radar_ = param.n_radar;
+    n_camera_ = param.n_camera;
     n_x_ = param.n_state;
     x_ = Eigen::VectorXd(n_x_);
     P_ = Eigen::MatrixXd::Identity(n_x_, n_x_);
@@ -18,9 +21,13 @@ UKF::UKF(const Param& param) {
     std_radpx_ = param.std_radar_x;
     std_radpy_ = param.std_radar_y;
     std_radv_ = param.std_radar_v;
+    std_campx_ = param.std_camera_x;
+    std_campy_ = param.std_camera_y;
+    std_camv_ = param.std_camera_v;
 
     r_lidar_ = param.R_lidar;
     r_radar_ = param.R_radar;
+    r_camera_ = param.R_camera;
 
     n_aug_ = param.n_state_aug;
 
@@ -183,11 +190,22 @@ void UKF::prediction(double delta_t) {
 }
 
 
+void UKF::update(Detection& detection, double delta_t) {
+    if (detection.getSensorType() == SensorType::RADAR && use_radar_) {
+        updateRadar(detection, delta_t);
+    } else if (detection.getSensorType() == SensorType::LIDAR && use_lidar_) {
+        updateLidar(detection, delta_t);
+    } else if (detection.getSensorType() == SensorType::CAMERA && use_cam_) {
+        updateCamera(detection, delta_t);
+    } else return;
+}
+
+
 void UKF::updateLidar(Detection& detection, double delta_t) {
 
     prediction(delta_t);
 
-    const int n_z = 2;
+    const int n_z = n_lidar_;
     Eigen::MatrixXd Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
 
     //transform sigma points into measurement space
@@ -204,7 +222,7 @@ void UKF::updateRadar(Detection& detection, double delta_t) {
 
     prediction(delta_t);
 
-    const int n_z = 3;
+    const int n_z = n_radar_;
     Eigen::MatrixXd Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
 
     for (int i=0; i < 2 * n_aug_ + 1; ++i) {
@@ -223,7 +241,7 @@ void UKF::updateCamera(Detection& detection, double delta_t) {
 
     prediction(delta_t);
 
-    const int n_z = 3;
+    const int n_z = n_camera_;
     Eigen::MatrixXd Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
 
     for (int i=0; i < 2 * n_aug_ + 1; ++i) {
@@ -327,5 +345,106 @@ inline double UKF::normalizeAngle(double phi) {
     if (phi_norm > kPI) phi_norm -= 2*kPI;
 
     return phi_norm;
+}
+
+
+void update(std::vector<Detection>& selected_detections, const Eigen::VectorXd& beta, const float& last_beta) {
+
+}
+
+
+void UKF::measurementUpdate(std::vector<Detection>& selected_detections,
+                            const Eigen::MatrixXd &Zsig,
+                            int n_z,
+                            const Eigen::VectorXd& beta,
+                            const float& last_beta) {
+    // Eigen::VectorXd z_pred = Eigen::VectorXd(n_z);
+    z_pred_ = Eigen::VectorXd(n_z);
+
+    //calculate mean predicted measurement
+    z_pred_.fill(0.0);
+    for (int i=0; i< 2 * n_aug_ + 1; ++i) {
+        z_pred_ += weights_(i) * Zsig.col(i);
+    }
+
+    //calculate measurement covariance matrix S
+    // Eigen::MatrixXd S = Eigen::MatrixXd(n_z, n_z);
+    S_ = Eigen::MatrixXd(n_z, n_z);
+
+    S_.fill(0.0);
+    for (int i=0; i< 2 * n_aug_ + 1; ++i) {
+        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred_;
+
+        S_ += weights_(i) * z_diff * z_diff.transpose();
+    }
+
+    if (selected_detections.at(0).getSensorType() == SensorType::RADAR) {
+        S_ += r_radar_;
+    } else if (selected_detections.at(0).getSensorType() == SensorType::LIDAR){
+        S_ += r_lidar_;
+    } else if (selected_detections.at(0).getSensorType() == SensorType::CAMERA) {
+        S_ += r_camera_;
+    }
+
+    //calculate cross correlation matrix
+    Eigen::MatrixXd Tc = Eigen::MatrixXd(n_x_, n_z);
+
+    Tc.fill(0.0);
+    for (int i=0; i < 2 * n_aug_ + 1; i++) {
+        //residual
+        Eigen::VectorXd z_diff = Zsig.col(i) - z_pred_;
+
+        // state difference
+        Eigen::VectorXd x_diff = Xsig_pred_.col(i) - x_;
+        x_diff(3) = normalizeAngle(x_diff(3));
+
+        Tc += weights_(i) * x_diff * z_diff.transpose();
+    }
+
+    //Kalman gain K;
+    Eigen::MatrixXd Si = S_.inverse();
+    Eigen::MatrixXd K = Tc * Si;
+
+    // TODO: update K, P with beta.
+    Eigen::VectorXd x_filter = Eigen::VectorXd(n_x_);
+    x_filter.fill(0.0);
+    for (int i = 0; i < selected_detections.size(); i++) {
+        Eigen::VectorXd a = x_ + K * (selected_detections.at(i).getVector() - z_pred_);
+        x_filter += beta(i) * a;
+    }
+    x_filter = last_beta * x_ + x_filter;
+
+    Eigen::MatrixXd P_tmp = Eigen::MatrixXd(n_x_, n_x_);
+    P_tmp.fill(0.0);
+    for (int i=0; i < selected_detections.size() + 1; i++) {
+        Eigen::VectorXd a = Eigen::VectorXd(n_x_);
+        a.setZero();
+        if (i == selected_detections.size()) {
+            a = x_;
+        } else {
+            a = x_ + K * (selected_detections.at(i).getVector() - z_pred_);
+        }
+        P_tmp += beta(i) * (a * a.transpose() - x_filter * x_filter.transpose());
+    }
+
+    x_ = x_filter;
+    P_ -= (1 - last_beta) * K * S_ * K.transpose();
+    P_ += P_tmp;
+
+    Eigen::VectorXd z_diff = Eigen::VectorXd(n_z);
+    z_diff.fill(0.0);
+    for (int i=0; i < selected_detections.size(); i++) {
+        z_diff += beta(i) * (selected_detections.at(i).getVector() - z_pred_);
+    }
+
+    // Calculate the normalized innovation squared()
+    if (selected_detections.at(0).getSensorType() == SensorType::RADAR) {
+        nis_radar_ = z_diff.transpose() * Si * z_diff;
+    } else if (selected_detections.at(0).getSensorType() == SensorType::LIDAR){
+        nis_lidar_ = z_diff.transpose() * Si * z_diff;
+    } else if (selected_detections.at(0).getSensorType() == SensorType::CAMERA){
+        nis_camera_ = z_diff.transpose() * Si * z_diff;
+    }
+
 }
 
