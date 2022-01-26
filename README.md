@@ -6,5 +6,5 @@
 
 ## TODO
 
-- Migrate simulation data from matlab to txt.
-- Migrate JPDA to the current repo, under the reference [JPDA](git://github.com/apennisi/jpdaf_tracking.git)
+- [x] Migrate simulation data from matlab to txt.
+- [ ] Migrate JPDA to the current repo, under the reference [JPDA](git://github.com/apennisi/jpdaf_tracking.git)
