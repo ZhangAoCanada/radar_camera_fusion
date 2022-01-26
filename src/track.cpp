@@ -59,10 +59,14 @@ void Track::predict(double delta_t) {
 
 
 void Track::update(Detection& detection, double delta_t) {
+    increaseLifeTime();
+    no_detections_ = 0;
     ukf_->update(detection, delta_t);
 }
 
 
 void Track::update(std::vector<Detection>& selected_detections, const Eigen::VectorXd& beta, const float& last_beta) {
+    increaseLifeTime();
+    no_detections_ = 0;
     ukf_->update(selected_detections, beta, last_beta);
 }

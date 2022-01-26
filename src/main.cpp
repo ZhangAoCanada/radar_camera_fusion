@@ -78,6 +78,7 @@ int main(int argc, char* argv[]) {
     JPDATracker tracker(param);
 
     for(int k = 0; k < all_sensor_data.size(); k++){
+        // if (k > 10) continue;
         int sensor_type;
         long long timestamp;
         std::string sensor_name;
