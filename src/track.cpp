@@ -57,6 +57,12 @@ void Track::predict(double delta_t) {
     ellipse_volume_ = M_PI * g_sigma_ * sqrt(S.determinant());
 }
 
+
 void Track::update(Detection& detection, double delta_t) {
     ukf_->update(detection, delta_t);
+}
+
+
+void Track::update(std::vector<Detection>& selected_detections, const Eigen::VectorXd& beta, const float& last_beta) {
+    ukf_->update(selected_detections, beta, last_beta);
 }

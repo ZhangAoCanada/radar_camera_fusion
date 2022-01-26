@@ -281,6 +281,8 @@ void UKF::measurementUpdate(Detection& detection,
         S_ += r_radar_;
     } else if (detection.getSensorType() == SensorType::LIDAR){
         S_ += r_lidar_;
+    } else if (detection.getSensorType() == SensorType::CAMERA){
+        S_ += r_camera_;
     }
 
     //calculate cross correlation matrix
@@ -314,6 +316,8 @@ void UKF::measurementUpdate(Detection& detection,
         nis_radar_ = z_diff.transpose() * Si * z_diff;
     } else if (detection.getSensorType() == SensorType::LIDAR){
         nis_lidar_ = z_diff.transpose() * Si * z_diff;
+    } else if (detection.getSensorType() == SensorType::CAMERA){
+        nis_camera_ = z_diff.transpose() * Si * z_diff;
     }
 
 }
@@ -348,7 +352,37 @@ inline double UKF::normalizeAngle(double phi) {
 }
 
 
-void update(std::vector<Detection>& selected_detections, const Eigen::VectorXd& beta, const float& last_beta) {
+void UKF::update(std::vector<Detection>& selected_detections, const Eigen::VectorXd& beta, const float& last_beta) {
+
+    int n_z;
+    Eigen::MatrixXd Zsig;
+
+    if (selected_detections.at(0).getSensorType() == SensorType::RADAR) {
+        n_z = n_radar_;
+        Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
+        for (int i=0; i < 2 * n_aug_ + 1; ++i) {
+            Zsig(0, i) = Xsig_pred_(0, i);
+            Zsig(1, i) = Xsig_pred_(1, i);
+            Zsig(2, i) = Xsig_pred_(2, i);
+        }
+    } else if (selected_detections.at(0).getSensorType() == SensorType::LIDAR){
+        n_z = n_lidar_;
+        Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
+        for (int i=0; i < 2 * n_aug_ + 1; ++i) {
+            Zsig(0, i) = Xsig_pred_(0, i);
+            Zsig(1, i) = Xsig_pred_(1, i);
+        }
+    } else if (selected_detections.at(0).getSensorType() == SensorType::CAMERA){
+        n_z = n_camera_;
+        Zsig = Eigen::MatrixXd(n_z, 2 * n_aug_ + 1);
+        for (int i=0; i < 2 * n_aug_ + 1; ++i) {
+            Zsig(0, i) = Xsig_pred_(0, i);
+            Zsig(1, i) = Xsig_pred_(1, i);
+            Zsig(2, i) = Xsig_pred_(2, i);
+        }
+    }
+
+    measurementUpdate(selected_detections, Zsig, n_z, beta, last_beta);
 
 }
 
@@ -405,7 +439,7 @@ void UKF::measurementUpdate(std::vector<Detection>& selected_detections,
     Eigen::MatrixXd Si = S_.inverse();
     Eigen::MatrixXd K = Tc * Si;
 
-    // TODO: update K, P with beta.
+    // NOTE: update K, P with beta
     Eigen::VectorXd x_filter = Eigen::VectorXd(n_x_);
     x_filter.fill(0.0);
     for (int i = 0; i < selected_detections.size(); i++) {

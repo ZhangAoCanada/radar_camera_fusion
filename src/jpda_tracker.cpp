@@ -62,12 +62,14 @@ void JPDATracker::track(std::vector<Detection>& detections) {
             for (int k = 0; k < tracks_.size(); k++) {
                 if (curr_association.at(k)) {
                     // TODO: update KF
-                    // tracks_.at(k)->update(selected_detections.at(k), dt);
+                    tracks_.at(k)->update(selected_detections, beta_.col(k), last_beta_(k));
                 } else {
                     tracks_.at(k)->notDetected();
                 }
             }
 		}
+
+        deleteTracks();
     }
 }
 

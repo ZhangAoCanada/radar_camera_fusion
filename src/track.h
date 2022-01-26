@@ -28,6 +28,9 @@ public:
     void process(Detection& detection);
     void predict(double delta_t);
     void update(Detection& detection, double delta_t);
+    void update(std::vector<Detection>& selected_detections, 
+                    const Eigen::VectorXd& beta, 
+                    const float& last_beta);
 
     void setId(int id) { id_ = id; }
     void increaseLifeTime() { life_time_++; }
