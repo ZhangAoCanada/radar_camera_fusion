@@ -8,6 +8,16 @@
 #include "jpda_tracker.h"
 
 
+inline double normAngle(double phi) {
+    double phi_norm = std::fmod(phi, 2*kPI);
+    if (phi_norm <= -kPI) phi_norm += 2*kPI;
+    if (phi_norm > kPI) phi_norm -= 2*kPI;
+
+    return phi_norm;
+}
+
+
+
 int main(int argc, char* argv[]) {
     std::string in_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/small_session_camcam_txt.txt";
     std::string out_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/small_session_camcam_out.txt";
@@ -49,6 +59,11 @@ int main(int argc, char* argv[]) {
         v = sqrt(vx * vx + vz * vz);
         yaw = atan2(vx, vz);
 
+        // NOTE: normalize the yaw angle
+        while (abs(yaw) > M_PI / 2) {
+            yaw = yaw > 0? yaw - M_PI : yaw + M_PI;
+        }
+
         Detection sensor_data(param, timestamp, x, z, v, yaw, 0, sensor_type);
 
         if (frame_id_count == frame_id) {
@@ -62,26 +77,24 @@ int main(int argc, char* argv[]) {
     }
 
     out_stream << "time_stamp" << "\t";
+    out_stream << "track_id" << "\t";
     out_stream << "x_state" << "\t";
     out_stream << "y_state" << "\t";
     out_stream << "v_state" << "\t";
     out_stream << "yaw_state" << "\t";
-    out_stream << "yaw_rate_state" << "\t";
-    out_stream << "sensor_type" << "\t";
-    out_stream << "NIS" << "\t";
-    out_stream << "x_measured" << "\t";
-    out_stream << "y_measured" << "\t";
-    out_stream << "v_measured" << "\t";
-    out_stream << "yaw_measured" << "\n";
+    out_stream << "yaw_rate_state" << "\n";
+    // out_stream << "sensor_type" << "\t";
+    // out_stream << "NIS" << "\t";
+    // out_stream << "x_measured" << "\t";
+    // out_stream << "y_measured" << "\t";
+    // out_stream << "v_measured" << "\t";
+    // out_stream << "yaw_measured" << "\n";
 
     /************ NOTE: Start tracking system from here. *************/
     JPDATracker tracker(param);
 
     for(int k = 0; k < all_sensor_data.size(); k++){
-        // if (k > 10) continue;
-        int sensor_type;
-        long long timestamp;
-        std::string sensor_name;
+        // if (k > 82) continue;
         std::vector<Detection> cam_data;
         std::vector<Detection> radar_data;
 
@@ -111,9 +124,24 @@ int main(int argc, char* argv[]) {
         if (cam_data.size() > 0) {
             tracker.track(cam_data);
         }
-        if (radar_data.size() > 0) {
-            tracker.track(radar_data);
+        // if (radar_data.size() > 0) {
+        //     tracker.track(radar_data);
+        // }
+
+
+        /************ NOTE: write results to txt  ************/
+        std::vector<std::shared_ptr<Track>> track_ptrs = tracker.getTracks();
+
+        for (const auto& tr: track_ptrs) {
+            out_stream << sensor_data.at(0).getTimestamp() << "\t";
+            out_stream << tr->getId() << "\t";
+            out_stream << tr->getState()(0) << "\t";
+            out_stream << tr->getState()(1) << "\t";
+            out_stream << tr->getState()(2) << "\t";
+            out_stream << tr->getState()(3) << "\t";
+            out_stream << tr->getState()(4) << "\n";
         }
+
     }
 
     std::cout << "Done.\n";

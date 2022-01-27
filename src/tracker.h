@@ -18,7 +18,6 @@ public:
     ~Tracker() = default;
 
     virtual void track(std::vector<Detection>& detections) = 0;
-    // virtual void track(Detection& detection, std::vector<bool> is_associated, int& track_id) = 0;
     void addTrack(std::shared_ptr<Track> track) { tracks_.push_back(track); }
     const int size() const { return tracks_.size(); }
     const std::vector<std::shared_ptr<Track>>& getTracks() const { return tracks_; }
@@ -31,8 +30,6 @@ protected:
     Param param_;
     std::vector<std::shared_ptr<Track>> tracks_;
     std::vector<std::shared_ptr<Track>> tracks_tmp_;
-    // std::vector<Eigen::VectorXd> prev_detections_;
-    // std::vector<Eigen::VectorXd> not_associated_;
     std::vector<Detection> prev_detections_;
     std::vector<Detection> not_associated_;
     Eigen::MatrixXd beta_;

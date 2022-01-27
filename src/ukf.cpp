@@ -408,9 +408,11 @@ void UKF::measurementUpdate(std::vector<Detection>& selected_detections,
     S_.fill(0.0);
     for (int i=0; i< 2 * n_aug_ + 1; ++i) {
         Eigen::VectorXd z_diff = Zsig.col(i) - z_pred_;
-
         S_ += weights_(i) * z_diff * z_diff.transpose();
     }
+
+    // std::cout << "[S] " << std::endl << S_ << std::endl;
+    // std::cout << "[S determinant] " << std::endl << S_.determinant() << std::endl;
 
     if (selected_detections.at(0).getSensorType() == SensorType::RADAR) {
         S_ += r_radar_;

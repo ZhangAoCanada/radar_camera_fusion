@@ -44,6 +44,7 @@ Eigen::MatrixXd Tracker::jointProbability(const std::vector<Eigen::MatrixXd>& as
                     if(A_matrix(0, notZero) == 1) {
                         const Eigen::VectorXd& z_predict = tracks_.at(notZero)->getMeasurementPred();
                         const Eigen::MatrixXd& S = tracks_.at(notZero)->getS();
+                        // const Eigen::MatrixXd& S = tracks_.at(notZero)->getS().cwiseAbs();
                         const Eigen::VectorXd& diff = selected_detections.at(j).getVector() - z_predict;
                         cv::Mat S_cv;
                         cv::eigen2cv(S, S_cv);
@@ -54,15 +55,9 @@ Eigen::MatrixXd Tracker::jointProbability(const std::vector<Eigen::MatrixXd>& as
 						cv::eigen2cv(selected_detections.at(j).getVector(), det_cv);
 						z_cv = z_cv.t();
 						det_cv = det_cv.t();
-						/* NOTE: original implementation */
-                        //cv::Mat z_cv(cv::Size(2, 1), CV_32FC1);
-                        //cv::Mat det_cv(cv::Size(2, 1), CV_32FC1);
-                        //z_cv.at<double>(0) = z_predict(0);
-                        //z_cv.at<double>(1) = z_predict(1);
-                        //det_cv.at<double>(0) = selected_detections.at(j).getVector()(0);
-                        //det_cv.at<double>(1) = selected_detections.at(j).getVector()(1);
                         const double& b = cv::Mahalanobis(z_cv, det_cv, S_cv.inv());
                         N = N / sqrt((2*CV_PI*S).determinant())*exp(-b);
+                        // N = N / sqrt(abs((2*CV_PI*S).determinant()))*exp(-b);
                     }
                 }
             }
@@ -102,7 +97,6 @@ Eigen::MatrixXd Tracker::jointProbability(const std::vector<Eigen::MatrixXd>& as
     //Compute Beta Coefficients
     Eigen::MatrixXd beta(validationIdx + 1, tracksize);
     beta = Eigen::MatrixXd::Zero(validationIdx + 1, tracksize);
-    
     
     Eigen::VectorXd sumBeta(tracksize);
     sumBeta.setZero();

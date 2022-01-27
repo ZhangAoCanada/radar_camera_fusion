@@ -49,6 +49,9 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 
         associate(selected_detections, q, detections, is_associated);
 
+        // ------------------ debug -----------------
+        std::cout << "----- debug ------\n";
+
 		// NOTE: check association
 		if (q.total() == 0) {
 			for (const auto& track: tracks_) {
@@ -58,6 +61,7 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 			curr_association = analyzeTracks(q, detections);
             const std::vector<Eigen::MatrixXd>& association_matrices = generateHypothesis(selected_detections, q);
             beta_ = jointProbability(association_matrices, selected_detections);
+
             last_beta_ = beta_.row(beta_.rows() - 1);
             for (int k = 0; k < tracks_.size(); k++) {
                 if (curr_association.at(k)) {
@@ -66,12 +70,18 @@ void JPDATracker::track(std::vector<Detection>& detections) {
                 } else {
                     tracks_.at(k)->notDetected();
                 }
+
+                // ---------------- debug -----------------
+                auto state = tracks_.at(k)->getState();
+                std::cout << "[Track UKF State] ";
+                std::cout << tracks_.at(k)->getId() << " ";
+                for (int l = 0; l < state.size(); l++) {
+                    std::cout << state(l) << " ";
+                }
+                std::cout << "\n";
+                // ----------------------------------------
             }
 		}
-        std::cout << "----- debug ------\n";
-        for (const auto& t : tracks_)
-            std::cout << "[" << t->getId() << ", " << t->isAlive() << "]" << " ";
-        std::cout << "\n";
 
         deleteTracks();
 
@@ -81,12 +91,8 @@ void JPDATracker::track(std::vector<Detection>& detections) {
             }
         }
 
-        std::cout << "------ debug ------\n";
-        std::cout << "[INFO] tracks size: " << tracks_.size() << std::endl;
-
         tracks_tmp_.clear();
         manageNewTracks();
-        // std::cout << "[INFO] tracks_tmp_ size: " << tracks_tmp_.size() << std::endl;
         for (auto& tr : tracks_tmp_) {
             tracks_.push_back(tr);
         }
@@ -97,11 +103,19 @@ void JPDATracker::track(std::vector<Detection>& detections) {
 
 void JPDATracker::deleteTracks()
 {
-    for(int i = tracks_.size() - 1; i >= 0; --i) {
-        if(!tracks_.at(i)->isAlive() && tracks_.at(i)->getId() != -1)
-            tracks_.erase(tracks_.begin() + i);
-        if (tracks_.at(i)->getTrackState() == Track::DISCARD) 
-            tracks_.erase(tracks_.begin() + i);
+    // for(int i = tracks_.size() - 1; i >= 0; --i) {
+    //     if(!tracks_.at(i)->isAlive() && tracks_.at(i)->getId() != -1)
+    //         tracks_.erase(tracks_.begin() + i);
+    //     if (tracks_.at(i)->getTrackState() == Track::DISCARD) 
+    //         tracks_.erase(tracks_.begin() + i);
+    // }
+    for (auto it = tracks_.begin(); it != tracks_.end();) {
+        if (!(*it)->isAlive() && (*it)->getId() != -1)
+            tracks_.erase(it);
+        else if ((*it)->getTrackState() == Track::DISCARD)
+            tracks_.erase(it);
+        else
+            ++it;
     }
 }
 
