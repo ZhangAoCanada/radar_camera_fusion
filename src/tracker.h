@@ -1,49 +1,102 @@
-#ifndef TRACKER_H_
-#define TRACKER_H_
+/*
+ * author: wx
+ * date: 2020.12.13
+ * reference:
+ */
+#ifndef TRACKER_H
+#define TRACKER_H
 
 #include <iostream>
+#include <fstream>
+#include <stdlib.h>
+#include <string>
 #include <vector>
 #include <memory>
-#include <eigen3/Eigen/Dense>
+#include <set>
+#include <unordered_map>
+
+#include "imm_ukf.h"
+#include "hungarianAlg.h"
+#include "readparam.h"
+#include "track.h"
+
 #include <opencv2/opencv.hpp>
 #include <opencv2/core/eigen.hpp>
 
-#include "param.h"
-#include "track.h"
-#include "detection.h"
+//TODO define the form of detection
+typedef std::shared_ptr<Track> track_ptr;
+typedef std::vector<Detect> Detection;
 
-class Tracker {
+class Tracker{
 public:
-    Tracker(const Param& param);
-    ~Tracker() = default;
+	typedef std::vector<Eigen::MatrixXd> Matrices;
+	typedef std::vector<Eigen::Vector2f> Vec2f;
 
-    virtual void track(std::vector<Detection>& detections) = 0;
-    void addTrack(std::shared_ptr<Track> track) { tracks_.push_back(track); }
-    const int size() const { return tracks_.size(); }
-    const std::vector<std::shared_ptr<Track>>& getTracks() const { return tracks_; }
+	Tracker(Param& p):param_(p){
+		init_ = false;
+		start_tracking_ = false;
+		track_id_ = 0;	
+		filewrite.open("/home/wx/Desktop/tracking_code/tracker/trackresult.txt", std::ios::out|std::ios::app);
 
-protected:
-    const static int MAX_ASSOCIATIONS = 10000;
-    bool initialized_;
-    bool start_tracking_;
-    int track_id_;
-    Param param_;
-    std::vector<std::shared_ptr<Track>> tracks_;
-    std::vector<std::shared_ptr<Track>> tracks_tmp_;
-    std::vector<Detection> prev_detections_;
-    std::vector<Detection> not_associated_;
-    Eigen::MatrixXd beta_;
-    Eigen::VectorXd last_beta_;
+		chi2in975[1] = 5.025;
+		chi2in975[2] = 7.378;
+		chi2in975[3] = 9.348;
+		chi2in975[4] = 11.143;
+		chi2in975[5] = 12.833;
+		chi2in975[6] = 14.449;
+	};
 
-    Eigen::MatrixXd jointProbability(const std::vector<Eigen::MatrixXd>& association_matrices, const std::vector<Detection>& selected_detections);
-    std::vector<Eigen::MatrixXd> generateHypothesis(const std::vector<Detection>& selected_detections, const cv::Mat& q);
-    std::vector<bool> analyzeTracks(const cv::Mat& q, std::vector<Detection>& detections);
+	void Init(const Detection& detections, float& time);
+
+	void manage_tracks(float& time);
+
+	void associate(Detection& _selected_detections, cv::Mat& _q, 
+			const Detection& _detections);
+	Matrices generate_hypothesis(const cv::Mat& _q); //假设矩阵
+
+	std::vector<bool> analyze_tracks(const cv::Mat& _q);
+
+	Eigen::MatrixXd joint_probability(const Matrices& _association_matrices,
+						const Detection& selected_detections);//JPDA
+	Eigen::MatrixXd joint_probability(const Matrices& _association_matrices,
+							const Detection& selected_detections,
+							std::vector<track_ptr>& tracks_in);
+
+	void track(const Detection& detection, float& time, std::vector<Eigen::VectorXd>& result);
+
+	void delete_tracks();
+
+	void pruning(Detection&  selected_detections, std::vector<int>& final_select,std::vector<track_ptr>& tacks_in);
+
+	~Tracker(){
+	};
+
 
 private:
-    virtual void deleteTracks() = 0;
-    virtual void manageNewTracks() = 0;
-    virtual void associate(std::vector<Detection>& selected_detections, cv::Mat& q, std::vector<Detection>& detections, std::vector<bool>& is_associated) = 0;
+	constexpr static uint MAX_ASSOC = 10000;
 
-}; // class Tracker
+	std::vector<track_ptr> tracks_;
+	std::vector<track_ptr> unconfirmed_tracks_;
+	std::vector<track_ptr> confirmed_tracks_;
 
-#endif // TRACKER_H_
+	int track_id_;
+	
+	bool init_;
+	bool start_tracking_;
+
+	float pretime;
+
+	Detection not_associated_;
+	Detection prev_detections_;
+	
+	Param param_;
+	TrackState Track_state_;
+
+	std::ofstream filewrite;
+
+	std::unordered_map<int, float> chi2in975;
+
+};
+
+#endif
+
