@@ -314,9 +314,11 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 			Eigen::VectorXd x = tr->GetState();
 			Eigen::Vector2f p = tr->GetMeasure();
 			int id = tr->GetId();
-			Eigen::VectorXd save(11);//id, fx, fy, angle, mx, my, yaw, l, w, h, z
-			Box tempb = tr->GetBox();
-			save<<id,x(0),x(1),x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width,tempb.height,tempb.z;
+			// Eigen::VectorXd save(11);//id, fx, fy, angle, mx, my, yaw, l, w, h, z
+			Eigen::VectorXd save(6);//id, fx, fy, angle, mx, my, yaw 
+			// Box tempb = tr->GetBox();
+			// save<<id,x(0),x(1),x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width,tempb.height,tempb.z;
+			save<<id,x(0),x(1),x(2), p(0), p(1);
 			//std::cout<<"track->Age() "<<tr->Age()<<std::endl;
 			if(tr->Age()<3)
 				result.push_back(save);
@@ -352,11 +354,11 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 
 			cv::Mat assigmentsBin = cv::Mat::zeros(cv::Size(detSize, UconfirmTrackSize), CV_32SC1);
 			cv::Mat costMat = cv::Mat(cv::Size(detSize, UconfirmTrackSize), CV_32FC1);//cosmatrix (cols rows)
-			cv::Mat IoucostMat = cv::Mat(cv::Size(detSize, UconfirmTrackSize), CV_32FC1);//cosmatrix (cols rows)
+			// cv::Mat IoucostMat = cv::Mat(cv::Size(detSize, UconfirmTrackSize), CV_32FC1);//cosmatrix (cols rows)
 
 			std::vector<int> assignments;
 			std::vector<float> costs(detSize * UconfirmTrackSize);
-			std::vector<float> ioucosts(detSize * UconfirmTrackSize);
+			// std::vector<float> ioucosts(detSize * UconfirmTrackSize);
 
 			for(uint i = 0; i < UconfirmTrackSize; ++i){
 				for(uint j = 0; j < detSize; ++j){
@@ -387,7 +389,7 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 				for(uint j = 0; j < cols; ++j){
 					if(assigmentsBin.at<int>(i, j)){
 						unconfirmed_tracks_[i]->Update(seconda_sso_detections[j].position);//TODO change the imm_ukf
-						unconfirmed_tracks_[i]->UpdateBox(seconda_sso_detections[j]);
+						// unconfirmed_tracks_[i]->UpdateBox(seconda_sso_detections[j]);
 						unconfirmed_tracks_[i]->UpdateMeasure(seconda_sso_detections[j].position(0),seconda_sso_detections[j].position(1));
 						trackst[i] = true;
 						detst[j] = true;
@@ -423,9 +425,9 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 			Eigen::VectorXd x = track->GetState();
 			Eigen::Vector2f p = track->GetMeasure();
 			int id = track->GetId();
-			Eigen::VectorXd save(11);
-			Box tempb = track->GetBox();
-			save<<id,x(0),x(1), x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width, tempb.height,tempb.z;
+			Eigen::VectorXd save(6);
+			// Box tempb = track->GetBox();
+			save<<id,x(0),x(1), x(2), p(0), p(1);
 			if(track->Age()<=1)
 				result.push_back(save);
 		}
@@ -845,18 +847,18 @@ void Tracker::manage_tracks(float& time){
 
 		cv::Mat assigmentsBin = cv::Mat::zeros(cv::Size(deteSize, prevDetSize), CV_32SC1);
     	cv::Mat costMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);//cosmatrix
-    	cv::Mat IoucostMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);//cosmatrix
+    	// cv::Mat IoucostMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);//cosmatrix
 
     	std::vector<int> assignments;
     	std::vector<float> costs(deteSize * prevDetSize);
-    	std::vector<float> ioucosts(deteSize * prevDetSize);
+    	// std::vector<float> ioucosts(deteSize * prevDetSize);
 
    		for(uint i = 0; i < prevDetSize; ++i){
      		for(uint j = 0; j < deteSize; ++j){
     	  		costs.at(i + j * prevDetSize ) = euclideanDist(not_associated_.at(j).position, prev_detections_.at(i).position);
-    	  		ioucosts.at(i + j * prevDetSize ) = RectIou(not_associated_.at(j).rotbox, prev_detections_.at(i).rotbox);
+    	  		// ioucosts.at(i + j * prevDetSize ) = RectIou(not_associated_.at(j).rotbox, prev_detections_.at(i).rotbox);
     	  		costMat.at<float>(i, j) = costs.at(i + j * prevDetSize );
-    	  		IoucostMat.at<float>(i, j) = ioucosts.at(i + j * prevDetSize );
+    	  		// IoucostMat.at<float>(i, j) = ioucosts.at(i + j * prevDetSize );
       		}
     	}
     
@@ -868,8 +870,8 @@ void Tracker::manage_tracks(float& time){
 
     	const uint& assSize = assignments.size();//这个的大小应该是检测结果的大小，里边对应的是目标的编号
     	for(uint i = 0; i < assSize; ++i){
-      		if( assignments[i] != -1 && (costMat.at<float>(i, assignments[i]) < param_.pdist_thresh
-      				|| IoucostMat.at<float>(i, assignments[i]) < 0.5) ){
+      		if( assignments[i] != -1 && (costMat.at<float>(i, assignments[i]) < param_.pdist_thresh ) ) {
+      				// || IoucostMat.at<float>(i, assignments[i]) < 0.5) ){
     	  		assigmentsBin.at<int>(i, assignments[i]) = 1;
       		}
     	}
@@ -970,7 +972,7 @@ void Tracker::pruning(Detection&  selected_detections,
 			if(assigmentsBin.at<int>(i, j)){
 				final_select[j] = tacks_in[i]->GetId();
 				trackchoosen[i] = true;
-				tracks_[i]->UpdateBox(selected_detections[j]);
+				// tracks_[i]->UpdateBox(selected_detections[j]);
 				tracks_[i]->UpdateMeasure(selected_detections[j].position(0),selected_detections[j].position(1));
 				choosen[j] = true;
 			}

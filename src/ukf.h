@@ -8,8 +8,9 @@
 #include <iostream>
 #include <stdlib.h>
 #include <string>
-#include <Eigen/Geometry>
-#include "Eigen/Dense"
+#include <vector>
+#include <eigen3/Eigen/Geometry>
+#include <eigen3/Eigen/Dense>
 #include <unordered_map>
 
 

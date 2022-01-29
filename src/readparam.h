@@ -10,8 +10,8 @@
 #include<string>
 #include<iostream>
 #include<stdlib.h>
-#include<Eigen/Dense>
-#include<Eigen/Geometry>
+#include<eigen3/Eigen/Dense>
+#include<eigen3/Eigen/Geometry>
 
 //读取程序所需参数
 class Param{
@@ -67,7 +67,7 @@ public:
 		//TODO make config file
 	};
 
-	Param operator=(Param& pcopy){
+	void operator=(Param& pcopy){
 		this->pstate_v = pcopy.pstate_v;
 		this->pmea_v = pcopy.pmea_v;
 		this->pIou_thresh = pcopy.pIou_thresh;

@@ -18,19 +18,16 @@ add_definitions(-DOPENCV_DISABLE_EIGEN_TENSOR_SUPPORT)
 
 add_executable(ukf_test 
 src/main.cpp
-src/tools.h
-src/param.h
-src/param.cpp
-src/ukf.h
-src/ukf.cpp
-src/hungarianAlg.h
 src/hungarianAlg.cpp
+src/hungarianAlg.h
+src/imm_ukf.cpp
+src/imm_ukf.h
+src/readparam.h
 src/track.h
-src/track.cpp
-src/tracker.h
 src/tracker.cpp
-src/jpda_tracker.h
-src/jpda_tracker.cpp
+src/tracker.h
+src/ukf.cpp
+src/ukf.h
 )
 
 target_link_libraries(ukf_test ${EIGEN3_LIBRARIES})

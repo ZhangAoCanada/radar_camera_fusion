@@ -1,33 +1,28 @@
 #include <iostream>
 #include <string>
 
-#include "tools.h"
-#include "param.h"
-#include "detection.h"
-// #include "track.h"
-#include "jpda_tracker.h"
-
+#include "track.h"
+#include "tracker.h"
+#include "readparam.h"
 
 inline double normAngle(double phi) {
-    double phi_norm = std::fmod(phi, 2*kPI);
-    if (phi_norm <= -kPI) phi_norm += 2*kPI;
-    if (phi_norm > kPI) phi_norm -= 2*kPI;
-
-    return phi_norm;
+    if (phi > M_PI) {
+        phi -= 2 * M_PI;
+    } else if (phi < -M_PI) {
+        phi += 2 * M_PI;
+    }
+    return phi;
 }
 
 
 
 int main(int argc, char* argv[]) {
-    std::string in_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/small_session_camcam_txt.txt";
-    std::string out_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/small_session_camcam_out.txt";
+    std::string in_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/unit_test_camcam_txt.txt";
+    std::string out_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/data/unit_test_camcam_out.txt";
     std::string config_filename = "/home/ao/1R1V/experiments/jpda_ukf_test/config.json";
 
     std::ifstream in_stream(in_filename.c_str(), std::ifstream::in);
     std::ofstream out_stream(out_filename.c_str(), std::ofstream::out);
-    const Param param(config_filename);
-
-    checkFiles(in_stream, in_filename, out_stream, out_filename);
 
     std::string line;
     int frame_id;
@@ -36,13 +31,18 @@ int main(int argc, char* argv[]) {
     int sensor_id;
     double z, x, y, vz, vx, vy;
     double v, yaw;
-    SensorType sensor_type;
+
+    Param param;
+    Tracker tracker(param);
+    Detect::SensorType sensor_type;
     
-    std::vector<std::vector<Detection>> all_sensor_data;
-    std::vector<Detection> frame_sensor_data;
+    std::vector<std::vector<Detect>> all_sensor_data;
+    std::vector<Detect> frame_sensor_data;
     int frame_id_count = 1;
 
     while (getline(in_stream, line)) {
+        Detect sensor_data;
+
         std::istringstream iss(line);
         iss >> frame_id;
         iss >> timestamp_sec;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]) {
         iss >> vy;
         // other parameters 
         timestamp = timestamp_sec * 1000000; // standard timestamp is in microseconds
-        sensor_type = sensor_id == 1? SensorType::CAMERA : SensorType::RADAR;
+        sensor_type = sensor_id == 1? Detect::CAMERA : Detect::RADAR;
         v = sqrt(vx * vx + vz * vz);
         yaw = atan2(vx, vz);
 
@@ -64,7 +64,13 @@ int main(int argc, char* argv[]) {
             yaw = yaw > 0? yaw - M_PI : yaw + M_PI;
         }
 
-        Detection sensor_data(param, timestamp, x, z, v, yaw, 0, sensor_type);
+        sensor_data.timestamp = timestamp;
+        sensor_data.timestamp_sec = timestamp_sec;
+        sensor_data.sensor_type = sensor_type;
+        sensor_data.position = Eigen::VectorXd(2);
+        sensor_data.position << x, z;
+        sensor_data.v = v;
+        sensor_data.yaw = yaw;
 
         if (frame_id_count == frame_id) {
             frame_sensor_data.push_back(sensor_data);
@@ -76,13 +82,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    out_stream << "frame_id" << "\t";
     out_stream << "time_stamp" << "\t";
     out_stream << "track_id" << "\t";
-    out_stream << "x_state" << "\t";
-    out_stream << "y_state" << "\t";
-    out_stream << "v_state" << "\t";
-    out_stream << "yaw_state" << "\t";
-    out_stream << "yaw_rate_state" << "\n";
+    out_stream << "x" << "\t";
+    out_stream << "y" << "\t";
+    out_stream << "angle" << "\t";
+    out_stream << "mx" << "\t";
+    out_stream << "my" << "\n";
     // out_stream << "sensor_type" << "\t";
     // out_stream << "NIS" << "\t";
     // out_stream << "x_measured" << "\t";
@@ -91,55 +98,60 @@ int main(int argc, char* argv[]) {
     // out_stream << "yaw_measured" << "\n";
 
     /************ NOTE: Start tracking system from here. *************/
-    JPDATracker tracker(param);
 
     for(int k = 0; k < all_sensor_data.size(); k++){
-        // if (k > 82) continue;
-        std::vector<Detection> cam_data;
-        std::vector<Detection> radar_data;
+        // if (k > 100) continue;
+        std::vector<Detect> cam_data;
+        std::vector<Detect> radar_data;
+        std::vector<Eigen::VectorXd> result;
 
         auto sensor_data = all_sensor_data[k];
 
         if (sensor_data.size() == 0 || k <= 1)
             continue;
 
-        // std::cout << "[SENSOR INFO] \n";
+        // std::cout << "[SENSOR INFO] the " << k << "-th frame \n";
         // for (auto& data: sensor_data) {
-        //     std::cout << "\t" << data.getTimestamp() << " " << \
-        //                         data.getX() << " " << \
-        //                         data.getY() << " " << \
-        //                         data.getV() << " " << \
-        //                         data.getYaw() << " " << \
-        //                         data.getYawRate() << std::endl;
+        //     std::string sensor_name = data.sensor_type == Detect::CAMERA? "CAMERA" : "RADAR";
+        //     std::cout << sensor_name << "\t";
+        //     for (int l = 0; l < data.position.size(); l++) {
+        //         std::cout << data.position(l) << " ";
+        //     }
+        //     std::cout << "\n";
         // }
         
         for (const auto& data: sensor_data) {
-            if (data.getSensorType() == SensorType::CAMERA) {
+            if (data.sensor_type == Detect::CAMERA) {
                 cam_data.push_back(data);
-            } else if (data.getSensorType() == SensorType::RADAR) {
+            } else if (data.sensor_type == Detect::RADAR) {
                 radar_data.push_back(data);
             }
         }
 
         if (cam_data.size() > 0) {
-            tracker.track(cam_data);
+            tracker.track(cam_data, cam_data[0].timestamp_sec, result);
         }
         // if (radar_data.size() > 0) {
         //     tracker.track(radar_data);
         // }
+        std::cout << "[INFO] number of resutls: " << result.size() << std::endl;
 
 
         /************ NOTE: write results to txt  ************/
-        std::vector<std::shared_ptr<Track>> track_ptrs = tracker.getTracks();
-
-        for (const auto& tr: track_ptrs) {
-            out_stream << sensor_data.at(0).getTimestamp() << "\t";
-            out_stream << tr->getId() << "\t";
-            out_stream << tr->getState()(0) << "\t";
-            out_stream << tr->getState()(1) << "\t";
-            out_stream << tr->getState()(2) << "\t";
-            out_stream << tr->getState()(3) << "\t";
-            out_stream << tr->getState()(4) << "\n";
+        for (const auto& data: result) {
+            out_stream << k << "\t";
+            out_stream << cam_data[0].timestamp_sec << "\t";
+            out_stream << data(0) << "\t";
+            out_stream << data(1) << "\t";
+            out_stream << data(2) << "\t";
+            out_stream << data(3) << "\t";
+            out_stream << data(4) << "\t";
+            out_stream << data(5) << "\n";
+            std::cout << "[TRACK RESULT] the " << k << "-th frame ";
+            for (int l=0; l < data.size(); l++) {
+                std::cout << data(l) << " ";
+            }
+            std::cout << "\n";
         }
 
     }
