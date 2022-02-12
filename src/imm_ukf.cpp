@@ -9,7 +9,7 @@ void IMM_UKF::IMM_Initialization(Eigen::VectorXd& Z, float time, float velo, flo
 	//TODO initial x_merge_ interact_pro_
 	isinitialized = true;
 	
-	filewrite.open("/home/wx/Desktop/tracking_code/trackernew/result.txt", std::ios::out|std::ios::app);
+	// filewrite.open("/home/ao/1R1V/experiments/jpda_ukf_test/data/result.txt", std::ios::out|std::ios::app);
 
 	Eigen::VectorXd x(n_x_);
 	x.fill(0.0);
@@ -123,7 +123,7 @@ void IMM_UKF::UpdateProbability(std::vector<Eigen::VectorXd>& Z, const Eigen::Ve
 	}
 
 
-	filewrite<<Z[0](0)<<" "<<Z[0](1)<<" ";
+	// filewrite<<Z[0](0)<<" "<<Z[0](1)<<" ";
 	MixProbability();
 
 	//std::cout<<"########## Model probability ##########\n "<<model_pro_<<std::endl;
@@ -157,7 +157,7 @@ void IMM_UKF::UpdateProbability(Eigen::VectorXd& Z){
 		if(model_pro_(i)<1e-4) model_pro_(i) = 1e-4;
 	}
 
-	filewrite<<Z(0)<<" "<<Z(1)<<" ";
+	// filewrite<<Z(0)<<" "<<Z(1)<<" ";
 	MixProbability();
 
 	//td::cout<<"########## Model probability ##########\n "<<model_pro_<<std::endl;
@@ -180,7 +180,7 @@ void IMM_UKF::MixProbability(){
 	for(int i=0; i<model_size; ++i){
 		p_merge_ += model_pro_(i) * (model_P_[i] + (model_X_[i] -x_merge_)* (model_X_[i] -x_merge_).transpose());
 	}
-	filewrite<<track_id_<<" "<<x_merge_(0)<<" "<<x_merge_(1)<<" "<<x_merge_(2)<<" "<<x_merge_(3)<<" "<<model_pro_(0)<<" "<<model_pro_(1)<<" "<<model_pro_(2)<<"\n";
+	// filewrite<<track_id_<<" "<<x_merge_(0)<<" "<<x_merge_(1)<<" "<<x_merge_(2)<<" "<<x_merge_(3)<<" "<<model_pro_(0)<<" "<<model_pro_(1)<<" "<<model_pro_(2)<<"\n";
 	//std::cout<<"final merge P\n"<< p_merge_<<std::endl;
 }
 

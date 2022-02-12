@@ -134,6 +134,7 @@ inline float Angle_cal(float x, float y) {
 	}
 	return temp_tangle;
 }
+
 //初始化
 void Tracker::Init(const Detection& detections, float& time){
 
@@ -174,11 +175,8 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 		Init(detections,time);
 	}else{	//开始跟踪
 
-		//std::cout<<"#################### TRACKER tracking #####################"<<std::endl;
 		not_associated_.clear();
 		not_associated_.swap(not_associated_);
-		//级联关联
-		//std::cout<<"tracksstart "<<tracks_.size()<<" confirmed_tracks_ "<<confirmed_tracks_.size()<<std::endl;
 
 		for (auto& track:tracks_){
 			if(track->GetTrackState()==Track_state_.Confirmed && track->Age()==0){
@@ -315,10 +313,10 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 			Eigen::Vector2f p = tr->GetMeasure();
 			int id = tr->GetId();
 			// Eigen::VectorXd save(11);//id, fx, fy, angle, mx, my, yaw, l, w, h, z
-			Eigen::VectorXd save(6);//id, fx, fy, angle, mx, my, yaw 
+			Eigen::VectorXd save(7);//id, fx, fy, angle, mx, my, yaw 
 			// Box tempb = tr->GetBox();
 			// save<<id,x(0),x(1),x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width,tempb.height,tempb.z;
-			save<<id,x(0),x(1),x(2), p(0), p(1);
+			save<<id,x(0),x(1),x(2),x(3), p(0), p(1);
 			//std::cout<<"track->Age() "<<tr->Age()<<std::endl;
 			if(tr->Age()<3)
 				result.push_back(save);
@@ -425,9 +423,9 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 			Eigen::VectorXd x = track->GetState();
 			Eigen::Vector2f p = track->GetMeasure();
 			int id = track->GetId();
-			Eigen::VectorXd save(6);
+			Eigen::VectorXd save(7);
 			// Box tempb = track->GetBox();
-			save<<id,x(0),x(1), x(2), p(0), p(1);
+			save<<id,x(0),x(1), x(2),x(3), p(0), p(1);
 			if(track->Age()<=1)
 				result.push_back(save);
 		}
@@ -795,7 +793,6 @@ Eigen::MatrixXd Tracker::joint_probability(const Matrices& _association_matrices
     		}
     
     		Pr(i) = a * likelyhood * prior;
-		    //std::cout<<Pr(i)<<std::endl;
   	}
   
   	const float& prSum = Pr.sum();
@@ -822,19 +819,18 @@ Eigen::MatrixXd Tracker::joint_probability(const Matrices& _association_matrices
   	}
  
   	beta.row(validationIdx) = sumBeta;
-	//std::cout<<"#################### JPDAF END #########################"<<std::endl;
     return beta;
 }
 
 
 /**
- * @brief   manage_tracks
+ * @brief   manage tracks
  * @details https://github.com/apennisi/jpdaf_tracking
  * @param   time
  */
 void Tracker::manage_tracks(float& time){
-	const uint& prevDetSize = prev_detections_.size();//这里指的上一时刻那些没有匹配或是没有形成track的目标
-	const uint& deteSize = not_associated_.size(); //当前时刻没有匹配的目标
+	const uint& prevDetSize = prev_detections_.size();
+	const uint& deteSize = not_associated_.size(); 
 	
 	if(prevDetSize == 0){
 		prev_detections_ = not_associated_;
@@ -843,10 +839,9 @@ void Tracker::manage_tracks(float& time){
 		prev_detections_.clear();
 		prev_detections_.swap(prev_detections_);
 	}else{
-		//std::cout<<"######## manage track not asso ###############"<<not_associated_.size()<<std::endl;
 
 		cv::Mat assigmentsBin = cv::Mat::zeros(cv::Size(deteSize, prevDetSize), CV_32SC1);
-    	cv::Mat costMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);//cosmatrix
+    	cv::Mat costMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);
     	// cv::Mat IoucostMat = cv::Mat(cv::Size(deteSize, prevDetSize), CV_32FC1);//cosmatrix
 
     	std::vector<int> assignments;
@@ -861,14 +856,11 @@ void Tracker::manage_tracks(float& time){
     	  		// IoucostMat.at<float>(i, j) = ioucosts.at(i + j * prevDetSize );
       		}
     	}
-    
-    	//std::cout<<"########## costMat #####\n"<<costMat<<std::endl;
-    	//std::cout<<"########## ioucostMat #####\n"<<IoucostMat<<std::endl;
 
     	AssignmentProblemSolver APS;//匈牙利算法
     	APS.Solve(costs, prevDetSize, deteSize, assignments, AssignmentProblemSolver::optimal);
 
-    	const uint& assSize = assignments.size();//这个的大小应该是检测结果的大小，里边对应的是目标的编号
+    	const uint& assSize = assignments.size();
     	for(uint i = 0; i < assSize; ++i){
       		if( assignments[i] != -1 && (costMat.at<float>(i, assignments[i]) < param_.pdist_thresh ) ) {
       				// || IoucostMat.at<float>(i, assignments[i]) < 0.5) ){
@@ -882,16 +874,15 @@ void Tracker::manage_tracks(float& time){
     	for(uint i = 0; i < rows; ++i){
     		for(uint j = 0; j < cols; ++j){
     			if(assigmentsBin.at<int>(i, j)){
-					//std::cout<<time<<" "<<pretime<<" "<<(float)(time-pretime)<<std::endl;
+                    /************* This may cause an issue ***************/
     				const float& vx = (not_associated_.at(j).position(0) - prev_detections_.at(i).position(0))/(float)(time-pretime);
     				const float& vy = (not_associated_.at(j).position(1) - prev_detections_.at(i).position(1))/(float)(time-pretime);
 					float velo = std::sqrt(vx*vx + vy*vy);
 					float angle = atan2(vy,vx);
-					//std::cout<<vx<<" "<<vy<<" "<<angle<<std::endl;
-    				std::shared_ptr<Track> tr(new Track(param_, track_id_, time, not_associated_.at(j), velo, angle));//跟踪初始化 TODO
+    				std::shared_ptr<Track> tr(new Track(param_, track_id_, time, not_associated_.at(j), velo, angle));
     				track_id_++;
     				tracks_.push_back(tr);
-    			}//只有匹配上了才会创建跟踪器
+    			}
     		}
     	}
 

@@ -5,6 +5,7 @@
 #include "tracker.h"
 #include "readparam.h"
 
+
 inline double normAngle(double phi) {
     if (phi > M_PI) {
         phi -= 2 * M_PI;
@@ -87,9 +88,10 @@ int main(int argc, char* argv[]) {
     out_stream << "track_id" << "\t";
     out_stream << "x" << "\t";
     out_stream << "y" << "\t";
+    out_stream << "v" << "\t";
     out_stream << "angle" << "\t";
-    out_stream << "mx" << "\t";
-    out_stream << "my" << "\n";
+    out_stream << "mea_x" << "\t";
+    out_stream << "mea_y" << "\n";
     // out_stream << "sensor_type" << "\t";
     // out_stream << "NIS" << "\t";
     // out_stream << "x_measured" << "\t";
@@ -139,6 +141,7 @@ int main(int argc, char* argv[]) {
 
         /************ NOTE: write results to txt  ************/
         for (const auto& data: result) {
+            std::cout << "[DEBUG INFO] data size: " << data.size() << std::endl;
             out_stream << k << "\t";
             out_stream << cam_data[0].timestamp_sec << "\t";
             out_stream << data(0) << "\t";
@@ -146,7 +149,8 @@ int main(int argc, char* argv[]) {
             out_stream << data(2) << "\t";
             out_stream << data(3) << "\t";
             out_stream << data(4) << "\t";
-            out_stream << data(5) << "\n";
+            out_stream << data(5) << "\t";
+            out_stream << data(6) << "\n";
             std::cout << "[TRACK RESULT] the " << k << "-th frame ";
             for (int l=0; l < data.size(); l++) {
                 std::cout << data(l) << " ";
