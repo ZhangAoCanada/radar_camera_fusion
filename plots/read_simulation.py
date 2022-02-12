@@ -115,6 +115,7 @@ if __name__ == "__main__":
                 ax1.clear()
                 labeled_radar = False
                 labeled_camera = False
+                labeled_track = False
                 for data_sensor_raw in input_data:
                     data_sensor = DataStruct(data_sensor_raw)
                     color = 'r' if data_sensor.sensor_id == 1 else 'b'
@@ -137,11 +138,17 @@ if __name__ == "__main__":
                     data_output = OutputStruct(data_output_raw)
                     color = 'black' 
                     marker = '.'
-                    label = "id: " + str(data_output.track_id)
+                    tr_id = "id: " + str(data_output.track_id)
+                    label = "track"
                     rect = rectanglePatch(data_output, color, mode="output")
-                    ax1.scatter(-data_output.x, data_output.z, s=30, c=color, marker=marker, label=label)
+                    if not labeled_track:
+                        ax1.scatter(-data_output.x, data_output.z, s=30, c=color, marker=marker, label=label)
+                        labeled_track = True
+                    else:
+                        ax1.scatter(-data_output.x, data_output.z, s=30, c=color, marker=marker)
                     ax1.add_patch(rect)
                     ax1.quiver(-data_output.x, data_output.z, data_output.vx, data_output.vz, color=color, width = 0.003, scale=200)
+                    ax1.text(-data_output.x + 2, data_output.z, tr_id, fontsize=10)
                 ax1.set_xlim(-60, 60)
                 ax1.set_ylim(0, 60)
                 ax1.legend()
