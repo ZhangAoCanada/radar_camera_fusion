@@ -92,17 +92,13 @@ int main(int argc, char* argv[]) {
     out_stream << "angle" << "\t";
     out_stream << "mea_x" << "\t";
     out_stream << "mea_y" << "\n";
-    // out_stream << "sensor_type" << "\t";
-    // out_stream << "NIS" << "\t";
-    // out_stream << "x_measured" << "\t";
-    // out_stream << "y_measured" << "\t";
-    // out_stream << "v_measured" << "\t";
-    // out_stream << "yaw_measured" << "\n";
 
     /************ NOTE: Start tracking system from here. *************/
 
     for(int k = 0; k < all_sensor_data.size(); k++){
-        // if (k > 100) continue;
+        // if (k > 72) continue;
+        // std::cout << "[FRAME ID] " << k << "\n";
+
         std::vector<Detect> cam_data;
         std::vector<Detect> radar_data;
         std::vector<Eigen::VectorXd> result;
@@ -141,7 +137,6 @@ int main(int argc, char* argv[]) {
 
         /************ NOTE: write results to txt  ************/
         for (const auto& data: result) {
-            std::cout << "[DEBUG INFO] data size: " << data.size() << std::endl;
             out_stream << k << "\t";
             out_stream << cam_data[0].timestamp_sec << "\t";
             out_stream << data(0) << "\t";
@@ -151,11 +146,11 @@ int main(int argc, char* argv[]) {
             out_stream << data(4) << "\t";
             out_stream << data(5) << "\t";
             out_stream << data(6) << "\n";
-            std::cout << "[TRACK RESULT] the " << k << "-th frame ";
-            for (int l=0; l < data.size(); l++) {
-                std::cout << data(l) << " ";
-            }
-            std::cout << "\n";
+            // std::cout << "[FRAME ID] the " << k << "-th frame ";
+            // for (int l=0; l < data.size(); l++) {
+            //     std::cout << data(l) << " ";
+            // }
+            // std::cout << "\n";
         }
 
     }

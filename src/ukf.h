@@ -1,8 +1,3 @@
-/*
- * author: wx
- * date: 2020.12.08
- * reference:https://github.com/zhujun98/sensor-fusion
- */
 #ifndef MY_UKF_H
 #define MY_UKF_H
 #include <iostream>

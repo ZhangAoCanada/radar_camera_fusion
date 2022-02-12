@@ -116,13 +116,9 @@ public:
 
 	//漏检后的跟踪状态转移
 	void MarkMissed(){
-		//std::cout<<"MarkMissed "<<track_state_<<std::endl;
-
 		if(track_state_ == Track_state_.UnConfirmed){
 			track_state_ = Track_state_.Delete;
-			//std::cout<<"track_state_ "<<track_state_<<std::endl;
 		}else if(age_ > max_age_){
-			//std::cout<<"age "<<age_<<std::endl;
 			track_state_ = Track_state_.Delete;
 		}
 	}
@@ -137,7 +133,7 @@ public:
 		 Eigen::VectorXd state = imm_ukf_->getMixState();
 		 for(int i=0; i<6; ++i){
 			 if(std::isnan(state(i))){
-				 track_state_ = Track_state_.Delete;
+				track_state_ = Track_state_.Delete;
 			 }
 		 }
 		 return state;
@@ -182,7 +178,7 @@ private:
 	Param param_;
 	int id_ = -1;
 	int age_ = 0;//表示距离上次update的时间
-	int max_age_ = 4;
+	int max_age_ = 5;
 	int hit_ = 1;//跟踪次数
 	int max_init_ = 3;
 	int track_state_ = 0;
