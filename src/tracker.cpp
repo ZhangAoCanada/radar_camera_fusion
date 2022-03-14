@@ -419,6 +419,7 @@ void Tracker::trackRadar(const Detection& detections,float& time, std::vector<Ei
 			}
 		}
 
+        /* NOTE: what I think: when processing radar, tracks_ should not be touched */
 		// tracks_.clear();
 		// tracks_.swap(tracks_);
 
@@ -483,6 +484,7 @@ void Tracker::trackRadar(const Detection& detections,float& time, std::vector<Ei
 				}
 			}
 
+            /* NOTE: what I think: when processing radar, confirmed_tracks should not be further processed */
 			// for(int i=0; i<confirmed_tracks_.size(); ++i){
 			// 	if(missed_tracks[i]){
 			// 		confirmed_tracks_[i]->MarkMissed();
@@ -493,19 +495,6 @@ void Tracker::trackRadar(const Detection& detections,float& time, std::vector<Ei
 
 		std::vector<int> final_select;
 		pruning(selected_detections,final_select,prun_tracks);//TODO 剪枝
-
-        /* ------------------- debug ---------------- */
-        // std::cout << "[INFO] number of confirmed tracks: " << confirmed_tracks_.size() << std::endl;
-        // std::cout << "[INFO] number of tracks: " << tracks_.size() << std::endl;
-        // for (auto& track : tracks_) {
-        //     std::cout << "id " << track->GetId() << " "; 
-        //     auto track_state = track->GetState();
-        //     std::cout << "[ ";
-        //     for (int l=0; l<track_state.size(); ++l) {
-        //         std::cout << track_state[l] << " ";
-        //     }
-        //     std::cout << "]\n";
-        // }
 
 		for(auto& tr:tracks_){
 			Eigen::VectorXd x = tr->GetState();
@@ -595,6 +584,8 @@ void Tracker::trackRadar(const Detection& detections,float& time, std::vector<Ei
             }
 		}
 
+        /* what I think: the results from radar should not be stored in final resutls.
+            what experiments told me: this doesn't matter. */
 		// for(auto& track:unconfirmed_tracks_){
 		// 	tracks_.push_back(track);
 		// 	Eigen::VectorXd x = track->GetState();
