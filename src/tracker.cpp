@@ -146,7 +146,7 @@ void Tracker::Init(const Detection& detections, float& time){
 	pretime = time;
 }
 		
-void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::VectorXd>& result){
+void Tracker::trackCam(const Detection& detections,float& time, std::vector<Eigen::VectorXd>& result){
 	
 	if(!init_ || !start_tracking_){
 		Init(detections,time);
@@ -271,30 +271,30 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 		pruning(selected_detections,final_select,prun_tracks);//TODO 剪枝
 
         /* ------------------- debug ---------------- */
-        std::cout << "[INFO] number of confirmed tracks: " << confirmed_tracks_.size() << std::endl;
-        std::cout << "[INFO] number of tracks: " << tracks_.size() << std::endl;
-        for (auto& track : tracks_) {
-            std::cout << "id " << track->GetId() << " "; 
-            auto track_state = track->GetState();
-            std::cout << "[ ";
-            for (int l=0; l<track_state.size(); ++l) {
-                std::cout << track_state[l] << " ";
-            }
-            std::cout << "]\n";
-        }
+        // std::cout << "[INFO] number of confirmed tracks: " << confirmed_tracks_.size() << std::endl;
+        // std::cout << "[INFO] number of tracks: " << tracks_.size() << std::endl;
+        // for (auto& track : tracks_) {
+        //     std::cout << "id " << track->GetId() << " "; 
+        //     auto track_state = track->GetState();
+        //     std::cout << "[ ";
+        //     for (int l=0; l<track_state.size(); ++l) {
+        //         std::cout << track_state[l] << " ";
+        //     }
+        //     std::cout << "]\n";
+        // }
 
-		for(auto& tr:tracks_){
-			Eigen::VectorXd x = tr->GetState();
-			Eigen::Vector2f p = tr->GetMeasure();
-			int id = tr->GetId();
-			// Eigen::VectorXd save(11);//id, fx, fy, angle, mx, my, yaw, l, w, h, z
-			Eigen::VectorXd save(7);//id, fx, fy, angle, mx, my, yaw 
-			// Box tempb = tr->GetBox();
-			// save<<id,x(0),x(1),x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width,tempb.height,tempb.z;
-			save<<id,x(0),x(1),x(2),x(3), p(0), p(1);
-			if(tr->Age()<3)
-				result.push_back(save);
-		}
+		// for(auto& tr:tracks_){
+		// 	Eigen::VectorXd x = tr->GetState();
+		// 	Eigen::Vector2f p = tr->GetMeasure();
+		// 	int id = tr->GetId();
+		// 	// Eigen::VectorXd save(11);//id, fx, fy, angle, mx, my, yaw, l, w, h, z
+		// 	Eigen::VectorXd save(7);//id, fx, fy, angle, mx, my, yaw 
+		// 	// Box tempb = tr->GetBox();
+		// 	// save<<id,x(0),x(1),x(2), p(0), p(1), tempb.yaw,tempb.length,tempb.width,tempb.height,tempb.z;
+		// 	save<<id,x(0),x(1),x(2),x(3), p(0), p(1);
+		// 	if(tr->Age()<3)
+		// 		result.push_back(save);
+		// }
 
 
 		if(unconfirmed_tracks_.size()>0){
@@ -377,28 +377,17 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
             }
 		}
 
-		//std::cout<<"######## not asso ###############"<<not_associated_.size()<<std::endl;
-		/*for(auto& track:confirmed_tracks_){
-			tracks_.push_back(track);
-			Eigen::VectorXd x = track->GetState();
-			int id = track->GetId();
-			Eigen::VectorXd save(3);
-			save<<id,x(0),x(1);
-			if(track->Age()==0)
-				result.push_back(save);
-		}*/
-
-		for(auto& track:unconfirmed_tracks_){
-			tracks_.push_back(track);
-			Eigen::VectorXd x = track->GetState();
-			Eigen::Vector2f p = track->GetMeasure();
-			int id = track->GetId();
-			Eigen::VectorXd save(7);
-			// Box tempb = track->GetBox();
-			save<<id,x(0),x(1), x(2),x(3), p(0), p(1);
-			if(track->Age()<=1)
-				result.push_back(save);
-		}
+		// for(auto& track:unconfirmed_tracks_){
+		// 	tracks_.push_back(track);
+		// 	Eigen::VectorXd x = track->GetState();
+		// 	Eigen::Vector2f p = track->GetMeasure();
+		// 	int id = track->GetId();
+		// 	Eigen::VectorXd save(7);
+		// 	// Box tempb = track->GetBox();
+		// 	save<<id,x(0),x(1), x(2),x(3), p(0), p(1);
+		// 	if(track->Age()<=1)
+		// 		result.push_back(save);
+		// }
 
 		confirmed_tracks_.clear();
 		confirmed_tracks_.swap(confirmed_tracks_);
@@ -411,6 +400,224 @@ void Tracker::track(const Detection& detections,float& time, std::vector<Eigen::
 		pretime = time;
 	}
 }
+
+		
+void Tracker::trackRadar(const Detection& detections,float& time, std::vector<Eigen::VectorXd>& result){
+	
+	if(!init_ || !start_tracking_){
+        return;
+	}else{	//开始跟踪
+
+		not_associated_.clear();
+		not_associated_.swap(not_associated_);
+
+		for (auto& track:tracks_){
+			if(track->GetTrackState()==Track_state_.Confirmed){
+				confirmed_tracks_.push_back(track);
+			}else{
+				unconfirmed_tracks_.push_back(track);
+			}
+		}
+
+		// tracks_.clear();
+		// tracks_.swap(tracks_);
+
+		std::vector<bool> MeaisAsso(detections.size(),false);
+
+		cv::Mat_<int> q(cv::Size(confirmed_tracks_.size(), detections.size()), int(0));//基本关联矩阵q
+		
+        Detection selected_detections;//关联上的量测
+		for(const auto& track:confirmed_tracks_){
+			track->Prediction(time);
+		}
+
+		std::vector<track_ptr> prun_tracks;
+        associate(selected_detections, q, detections);
+
+		if(q.total()==0){
+			for(auto& track:confirmed_tracks_){
+				track->MarkMissed();
+			}
+		}else{
+			std::vector<std::vector<int> > cltrack;
+			std::vector<std::vector<int> > cldet;
+			std::vector<bool> missed_tracks(confirmed_tracks_.size(),true);
+
+            // This is to cluster all the connected (joint) tracks (cltrack) and detections (cldet) for the JPDA computations. By doing so, we can effectively save computation time.
+			clusterq(q, cltrack, cldet);
+			int clustersize = cltrack.size();
+			for(int i =0; i<clustersize; ++i){
+				int colsize = cltrack[i].size();
+				int rowsize = cldet[i].size();
+
+				cv::Mat x = cv::Mat_<int>(cv::Size(colsize + 1, rowsize), int(1));
+
+				for(int row=0; row<rowsize; ++row){
+					int rowinq = cldet[i][row];
+					for(int col=1; col<x.cols; ++col){
+						x.at<int>(row,col) = q.at<int>(rowinq, cltrack[i][col-1]);
+					}
+				}
+				std::vector<track_ptr> tracks;
+				for(auto trackid:cltrack[i]){
+					missed_tracks[trackid-1] = false;
+					tracks.push_back(confirmed_tracks_[trackid-1]);
+				}
+				Detection selectdets;
+				for(auto detid:cldet[i]){
+					selectdets.push_back(selected_detections[detid]);
+				}
+				const Matrices& association_matrices = generate_hypothesis(x);//生成假设矩阵
+
+				Eigen::MatrixXd beta = joint_probability(association_matrices, selectdets, tracks);//JPDAF
+				int b=0;
+				for(const auto& track:tracks){
+					std::vector<Eigen::VectorXd> Zv;
+					for(auto det : selectdets){
+						Zv.push_back(det.position);
+					}
+					track->Update(Zv, beta.col(b), beta(beta.rows() - 1, b), time);//TODO change the imm_ukf
+					b++;
+					// tracks_.push_back(track);
+					prun_tracks.push_back(track);
+				}
+			}
+
+			// for(int i=0; i<confirmed_tracks_.size(); ++i){
+			// 	if(missed_tracks[i]){
+			// 		confirmed_tracks_[i]->MarkMissed();
+			// 		tracks_.push_back(confirmed_tracks_[i]);
+			// 	}
+			// }
+		}
+
+		std::vector<int> final_select;
+		pruning(selected_detections,final_select,prun_tracks);//TODO 剪枝
+
+        /* ------------------- debug ---------------- */
+        // std::cout << "[INFO] number of confirmed tracks: " << confirmed_tracks_.size() << std::endl;
+        // std::cout << "[INFO] number of tracks: " << tracks_.size() << std::endl;
+        // for (auto& track : tracks_) {
+        //     std::cout << "id " << track->GetId() << " "; 
+        //     auto track_state = track->GetState();
+        //     std::cout << "[ ";
+        //     for (int l=0; l<track_state.size(); ++l) {
+        //         std::cout << track_state[l] << " ";
+        //     }
+        //     std::cout << "]\n";
+        // }
+
+		for(auto& tr:tracks_){
+			Eigen::VectorXd x = tr->GetState();
+			Eigen::Vector2f p = tr->GetMeasure();
+			int id = tr->GetId();
+			Eigen::VectorXd save(7);//id, fx, fy, angle, mx, my, yaw 
+			save<<id,x(0),x(1),x(2),x(3), p(0), p(1);
+			// if(tr->Age()<3)
+				result.push_back(save);
+		}
+
+
+		if(unconfirmed_tracks_.size()>0){
+			Detection seconda_sso_detections;
+
+			if(not_associated_.size()==0){
+				for(const auto& track:unconfirmed_tracks_){
+					track->MarkMissed();
+				}
+			}
+            else {
+                for(auto det:not_associated_){
+                    seconda_sso_detections.push_back(det);
+                }
+
+                not_associated_.clear();
+                not_associated_.swap(not_associated_);
+
+                for(const auto& track:unconfirmed_tracks_){
+                    track->Prediction(time);
+                }
+
+                const uint& UconfirmTrackSize = unconfirmed_tracks_.size();//这里指的上一时刻那些没有匹配或是没有形成track的目标
+                const uint& detSize = seconda_sso_detections.size(); //当前时刻没有匹配的目标
+
+                cv::Mat assigmentsBin = cv::Mat::zeros(cv::Size(detSize, UconfirmTrackSize), CV_32SC1);
+                cv::Mat costMat = cv::Mat(cv::Size(detSize, UconfirmTrackSize), CV_32FC1);//cosmatrix (cols rows)
+
+                std::vector<int> assignments;
+                std::vector<float> costs(detSize * UconfirmTrackSize);
+
+                for(uint i = 0; i < UconfirmTrackSize; ++i){
+                    for(uint j = 0; j < detSize; ++j){
+                        costs.at(i + j * UconfirmTrackSize ) = euclideanDist(seconda_sso_detections[j].position,
+                            unconfirmed_tracks_[i]->GetZ());
+                        costMat.at<float>(i, j) = costs.at(i + j * UconfirmTrackSize );
+                    }
+                }
+
+                AssignmentProblemSolver APS;//匈牙利算法
+                APS.Solve(costs, UconfirmTrackSize, detSize, assignments, AssignmentProblemSolver::optimal);
+
+                const uint& assSize = assignments.size();//这个的大小应该是检测结果的大小，里边对应的是目标的编号
+                for(uint i = 0; i < assSize; ++i){
+                    if( assignments[i] != -1 && costMat.at<float>(i, assignments[i]) < param_.pdist_thresh){
+                        assigmentsBin.at<int>(i, assignments[i]) = 1;
+                    }
+                }
+                const uint& rows = assigmentsBin.rows;
+                const uint& cols = assigmentsBin.cols;
+
+                std::vector<bool> choosen(detSize,false);
+                std::vector<bool> trackst(rows,false);
+                std::vector<bool> detst(cols,false);
+                for(uint i = 0; i < rows; ++i){
+                    for(uint j = 0; j < cols; ++j){
+                        if(assigmentsBin.at<int>(i, j)){
+                            unconfirmed_tracks_[i]->Update(seconda_sso_detections[j].position);//TODO change the imm_ukf
+                            // unconfirmed_tracks_[i]->UpdateBox(seconda_sso_detections[j]);
+                            unconfirmed_tracks_[i]->UpdateMeasure(seconda_sso_detections[j].position(0),seconda_sso_detections[j].position(1));
+                            trackst[i] = true;
+                            detst[j] = true;
+                        }
+                    }
+                }
+
+                for(uint j = 0; j < cols; ++j){
+                    if(!detst[j]){
+                        not_associated_.push_back(seconda_sso_detections[j]);
+                    }
+                }
+                for(uint i=0 ; i<rows; ++i){
+                    if(!trackst[i]){
+                        unconfirmed_tracks_[i]->MarkMissed();
+                    }
+                }
+            }
+		}
+
+		// for(auto& track:unconfirmed_tracks_){
+		// 	tracks_.push_back(track);
+		// 	Eigen::VectorXd x = track->GetState();
+		// 	Eigen::Vector2f p = track->GetMeasure();
+		// 	int id = track->GetId();
+		// 	Eigen::VectorXd save(7);
+		// 	save<<id,x(0),x(1), x(2),x(3), p(0), p(1);
+		// 	if(track->Age()<=1)
+		// 		result.push_back(save);
+		// }
+
+		confirmed_tracks_.clear();
+		confirmed_tracks_.swap(confirmed_tracks_);
+		unconfirmed_tracks_.clear();
+		unconfirmed_tracks_.swap(unconfirmed_tracks_);
+
+		delete_tracks();
+		pretime = time;
+	}
+}
+
+
+
 
 //计算关联矩阵
 void Tracker::associate(Detection& _selected_detections, cv::Mat& _q, 
@@ -446,8 +653,9 @@ void Tracker::associate(Detection& _selected_detections, cv::Mat& _q,
       		const double& mah = cv::Mahalanobis(tr_cv, det_cv, S_cv);
       		const float& eucl = euclideanDist(detection.position, tr);
             // remove the situation where there may appear nan Mahal Dist
-			if(std::isnan(mah) || std::isnan(eucl) ||std::isnan((param_.pi * param_.pg_sigma * std::sqrt(fabs(Sdt)))))
+			if(std::isnan(mah) || std::isnan(eucl) ||std::isnan((param_.pi * param_.pg_sigma * std::sqrt(fabs(Sdt))))) {
 				std::abort();
+            }
 			//mah <= (param_.pi * param_.pg_sigma * std::sqrt(fabs(Sdt))) &&
             // TODO: tune the threshold values...
 			if((eucl <= 1 && mah<chi2in975[2]) || eucl< 1.2){

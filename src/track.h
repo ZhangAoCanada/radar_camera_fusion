@@ -132,7 +132,7 @@ public:
 	Eigen::VectorXd GetState(){
 		 Eigen::VectorXd state = imm_ukf_->getMixState();
 		 for(int i=0; i<6; ++i){
-			 if(std::isnan(state(i))){
+            if(std::isnan(state(i))){
 				track_state_ = Track_state_.Delete;
 			 }
 		 }

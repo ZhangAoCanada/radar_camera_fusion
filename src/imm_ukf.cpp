@@ -24,8 +24,9 @@ void IMM_UKF::IMM_Initialization(Eigen::VectorXd& Z, float time, float velo, flo
 
 //输入交互
 void IMM_UKF::InputInteract(){
-	if(std::isnan(model_pro_(0)))
+	if(std::isnan(model_pro_(0))) {
 		std::abort();
+    }
 	if(model_pro_.sum() !=0)
 		model_pro_ /model_pro_.sum();
 

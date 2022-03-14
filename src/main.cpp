@@ -97,11 +97,11 @@ int main(int argc, char* argv[]) {
 
     for(int k = 0; k < all_sensor_data.size(); k++){
         // if (k > 72) continue;
-        // std::cout << "[FRAME ID] " << k << "\n";
 
         std::vector<Detect> cam_data;
         std::vector<Detect> radar_data;
         std::vector<Eigen::VectorXd> result;
+        float time_stamp_second;
 
         auto sensor_data = all_sensor_data[k];
 
@@ -127,18 +127,20 @@ int main(int argc, char* argv[]) {
         }
 
         if (cam_data.size() > 0) {
-            tracker.track(cam_data, cam_data[0].timestamp_sec, result);
+            tracker.trackCam(cam_data, cam_data[0].timestamp_sec, result);
+            time_stamp_second = cam_data[0].timestamp_sec;
         }
-        // if (radar_data.size() > 0) {
-        //     tracker.track(radar_data);
-        // }
-        std::cout << "[INFO] number of resutls: " << result.size() << std::endl;
+        if (radar_data.size() > 0) {
+            tracker.trackRadar(radar_data, radar_data[0].timestamp_sec, result);
+            time_stamp_second = radar_data[0].timestamp_sec;
+        }
+        std::cout << "[INFO] frame: " << k << ", number of resutls: " << result.size() << std::endl;
 
 
         /************ NOTE: write results to txt  ************/
         for (const auto& data: result) {
             out_stream << k << "\t";
-            out_stream << cam_data[0].timestamp_sec << "\t";
+            out_stream << time_stamp_second << "\t";
             out_stream << data(0) << "\t";
             out_stream << data(1) << "\t";
             out_stream << data(2) << "\t";

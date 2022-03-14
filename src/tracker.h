@@ -62,7 +62,9 @@ public:
 							const Detection& selected_detections,
 							std::vector<track_ptr>& tracks_in);
 
-	void track(const Detection& detection, float& time, std::vector<Eigen::VectorXd>& result);
+	void trackCam(const Detection& detection, float& time, std::vector<Eigen::VectorXd>& result);
+
+	void trackRadar(const Detection& detection, float& time, std::vector<Eigen::VectorXd>& result);
 
 	void delete_tracks();
 
