@@ -43,7 +43,7 @@ void IMM_UKF::InputInteract(){
 		X_hat_[j].fill(0.);
 		P_hat_[j].fill(0.);
 		for(int i=0; i<model_size; ++i){
-			float u =  ((interact_pro_(i,j)*model_pro_(i))/c_(j));
+			float u =  (interact_pro_(i,j)*model_pro_(i))/c_(j);
 			X_hat_[j] += u * model_X_[i]; //problem
 		}
 		for(int i=0; i<model_size; ++i){

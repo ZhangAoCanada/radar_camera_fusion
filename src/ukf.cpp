@@ -291,26 +291,26 @@ void UKF::Update( std::vector<Eigen::VectorXd>& Z, const Eigen::VectorXd& beta, 
 	P_ += P_temp;
 
 
-	/*for(const auto& det:Z){
-		Zminus_ += beta(i)*(det-z_pre_);
-		i++;
-	}
+	/*for(const auto& det:Z){*/
+		/*Zminus_ += beta(i)*(det-z_pre_);*/
+		/*i++;*/
+	/*}*/
 
-	x_ += K * Zminus_;
-	x_(3) = normalangle(x_(3));//,x_(2));
-	P_ -= (1-last_beta)* K * S_ * K.transpose();
+	/*x_ += K * Zminus_;*/
+	/*x_(3) = normalangle(x_(3));,x_(2));*/
+	/*P_ -= (1-last_beta)* K * S_ * K.transpose();*/
 
-	Eigen::MatrixXd z_temp(n_z_,n_z_);
-	z_temp.fill(0.0);
+	/*Eigen::MatrixXd z_temp(n_z_,n_z_);*/
+	/*z_temp.fill(0.0);*/
 	
-	int j =0;
-	for(const auto& det:Z){
-		z_temp += beta(j)*(det-z_pre_)*(det-z_pre_).transpose();
-		j++;
-	}
+	/*int j =0;*/
+	/*for(const auto& det:Z){*/
+		/*z_temp += beta(j)*(det-z_pre_)*(det-z_pre_).transpose();*/
+		/*j++;*/
+	/*}*/
 
 	
-	P_ += K*(z_temp - Zminus_*Zminus_.transpose()) * K.transpose();	*/
+	/*P_ += K*(z_temp - Zminus_*Zminus_.transpose()) * K.transpose();	*/
 
 
 }
